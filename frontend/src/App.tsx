@@ -1,59 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Leaf } from 'lucide-react';
+import { Leaf, Settings } from 'lucide-react';
 import { Calendar } from '@/features/calendar/Calendar';
 import { ContextModeToggle } from '@/features/context-mode/ContextModeToggle';
 import { DailyChecklist } from '@/features/checklist/DailyChecklist';
+import { ManagePanel } from '@/features/manage/ManagePanel';
 import { useAppStore } from '@/store/useAppStore';
 import { todayJST } from '@/lib/dayjs';
 import { cn } from '@/lib/utils';
-import type { Task, Habit } from '@/types';
-
-// Placeholder master data until we have CRUD endpoints.
-// These would normally come from a GET /api/v1/tasks?status=active call.
-const SAMPLE_TASKS: Task[] = [
-  {
-    id: 'task_001',
-    section: 'japanese',
-    title: 'Memorize Kanji',
-    type: 'quantitative',
-    metrics: { dailyTarget: 10, totalTarget: 500 },
-    conditions: { weather: 'any', mode: 'any' },
-    status: 'active',
-  },
-  {
-    id: 'task_002',
-    section: 'japanese',
-    title: 'Read NHK News',
-    type: 'boolean',
-    metrics: { dailyTarget: 1, totalTarget: 0 },
-    conditions: { weather: 'any', mode: 'any' },
-    status: 'active',
-  },
-  {
-    id: 'task_003',
-    section: 'dev',
-    title: 'LeetCode Problems',
-    type: 'quantitative',
-    metrics: { dailyTarget: 3, totalTarget: 100 },
-    conditions: { weather: 'any', mode: 'any' },
-    status: 'active',
-  },
-  {
-    id: 'task_004',
-    section: 'self_dev',
-    title: 'Read Book (pages)',
-    type: 'quantitative',
-    metrics: { dailyTarget: 20, totalTarget: 300 },
-    conditions: { weather: 'any', mode: 'any' },
-    status: 'active',
-  },
-];
-
-const SAMPLE_HABITS: Habit[] = [
-  { id: 'habit_001', title: 'Meditate instead of using smartphone', category: 'mindfulness', status: 'active' },
-  { id: 'habit_002', title: 'Morning stretching routine', category: 'health', status: 'active' },
-  { id: 'habit_003', title: 'Write gratitude note', category: 'mindfulness', status: 'active' },
-];
+import { Button } from '@/components/ui/button';
 
 const MODE_CLASS_MAP = {
   Growth: 'mode-growth',
@@ -62,15 +16,18 @@ const MODE_CLASS_MAP = {
 } as const;
 
 function App() {
-  const { currentMode, selectedDate, setDateAndFetch, error } = useAppStore();
+  const { currentMode, selectedDate, setDateAndFetch, fetchMasterData, tasks, habits, error } =
+    useAppStore();
   const [initialized, setInitialized] = useState(false);
+  const [showManage, setShowManage] = useState(false);
 
   useEffect(() => {
     if (!initialized) {
       setDateAndFetch(todayJST());
+      fetchMasterData();
       setInitialized(true);
     }
-  }, [initialized, setDateAndFetch]);
+  }, [initialized, setDateAndFetch, fetchMasterData]);
 
   const modeClass = MODE_CLASS_MAP[currentMode];
   const formattedDate = selectedDate
@@ -92,6 +49,18 @@ function App() {
               <Leaf className="h-5 w-5 text-mode-accent" />
             </div>
             <h1 className="text-xl font-bold tracking-tight">Daily Seed</h1>
+            <div className="ml-auto">
+              <Button
+                id="manage-button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setShowManage(true)}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Manage
+              </Button>
+            </div>
           </div>
           {selectedDate && (
             <p className="text-sm text-muted-foreground ml-12">{formattedDate}</p>
@@ -124,11 +93,14 @@ function App() {
             </section>
 
             <section>
-              <DailyChecklist tasks={SAMPLE_TASKS} habits={SAMPLE_HABITS} />
+              <DailyChecklist tasks={tasks} habits={habits} />
             </section>
           </main>
         </div>
       </div>
+
+      {/* Management Panel */}
+      {showManage && <ManagePanel onClose={() => setShowManage(false)} />}
     </div>
   );
 }

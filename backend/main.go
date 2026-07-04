@@ -53,8 +53,12 @@ func main() {
 	dailyRecordRepo := repository.NewDailyRecordRepository(db)
 
 	dailySvc := service.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
+	taskSvc := service.NewTaskService(taskRepo)
+	habitSvc := service.NewHabitService(habitRepo)
 
 	dailyHandler := handler.NewDailyHandler(dailySvc)
+	taskHandler := handler.NewTaskHandler(taskSvc)
+	habitHandler := handler.NewHabitHandler(habitSvc)
 
 	// Gin setup.
 	gin.SetMode(gin.ReleaseMode)
@@ -78,6 +82,8 @@ func main() {
 	// API routes.
 	v1 := r.Group("/api/v1")
 	dailyHandler.RegisterRoutes(v1)
+	taskHandler.RegisterRoutes(v1)
+	habitHandler.RegisterRoutes(v1)
 
 	// Start server.
 	addr := fmt.Sprintf(":%s", cfg.Port)

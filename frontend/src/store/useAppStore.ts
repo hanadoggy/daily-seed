@@ -1,6 +1,17 @@
 import { create } from 'zustand';
-import type { ContextMode, DailyRecord, Journal } from '../types';
-import { fetchDailyRecord, patchDailyRecord } from '../api/client';
+import type { ContextMode, DailyRecord, Journal, Task, Habit } from '../types';
+import {
+  fetchDailyRecord,
+  patchDailyRecord,
+  fetchTasks,
+  fetchHabits,
+  createTask as apiCreateTask,
+  updateTask as apiUpdateTask,
+  deleteTask as apiDeleteTask,
+  createHabit as apiCreateHabit,
+  updateHabit as apiUpdateHabit,
+  deleteHabit as apiDeleteHabit,
+} from '../api/client';
 
 interface AppState {
   selectedDate: string;
@@ -9,11 +20,22 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
 
+  tasks: Task[];
+  habits: Habit[];
+
   setDateAndFetch: (date: string) => Promise<void>;
+  fetchMasterData: () => Promise<void>;
   updateContextMode: (mode: ContextMode) => Promise<void>;
   saveJournal: (journalData: Journal) => Promise<void>;
   toggleHabitOptimistic: (habitId: string, isCompleted: boolean) => void;
   updateTaskProgressOptimistic: (taskId: string, amount: number) => void;
+
+  addTask: (task: Omit<Task, 'id' | 'status'>) => Promise<void>;
+  editTask: (id: string, task: Omit<Task, 'id' | 'status'>) => Promise<void>;
+  archiveTask: (id: string) => Promise<void>;
+  addHabit: (habit: Omit<Habit, 'id' | 'status'>) => Promise<void>;
+  editHabit: (id: string, habit: Omit<Habit, 'id' | 'status'>) => Promise<void>;
+  archiveHabit: (id: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -22,6 +44,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   dailyRecord: null,
   isLoading: false,
   error: null,
+  tasks: [],
+  habits: [],
 
   setDateAndFetch: async (date: string) => {
     set({ selectedDate: date, isLoading: true, error: null });
@@ -35,6 +59,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch daily record';
       set({ isLoading: false, error: message });
+    }
+  },
+
+  fetchMasterData: async () => {
+    try {
+      const [tasks, habits] = await Promise.all([fetchTasks(), fetchHabits()]);
+      set({ tasks, habits });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch master data';
+      set({ error: message });
     }
   },
 
@@ -121,5 +155,75 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Rollback on failure
       set({ dailyRecord: previousRecord });
     });
+  },
+
+  addTask: async (task) => {
+    try {
+      const created = await apiCreateTask(task);
+      set((state) => ({ tasks: [...state.tasks, created] }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create task';
+      set({ error: message });
+    }
+  },
+
+  editTask: async (id, task) => {
+    const previous = get().tasks;
+    try {
+      const updated = await apiUpdateTask(id, task);
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
+      }));
+    } catch (err) {
+      set({ tasks: previous });
+      const message = err instanceof Error ? err.message : 'Failed to update task';
+      set({ error: message });
+    }
+  },
+
+  archiveTask: async (id) => {
+    const previous = get().tasks;
+    // Optimistic removal from the active list
+    set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+    try {
+      await apiDeleteTask(id);
+    } catch {
+      set({ tasks: previous });
+    }
+  },
+
+  addHabit: async (habit) => {
+    try {
+      const created = await apiCreateHabit(habit);
+      set((state) => ({ habits: [...state.habits, created] }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create habit';
+      set({ error: message });
+    }
+  },
+
+  editHabit: async (id, habit) => {
+    const previous = get().habits;
+    try {
+      const updated = await apiUpdateHabit(id, habit);
+      set((state) => ({
+        habits: state.habits.map((h) => (h.id === id ? updated : h)),
+      }));
+    } catch (err) {
+      set({ habits: previous });
+      const message = err instanceof Error ? err.message : 'Failed to update habit';
+      set({ error: message });
+    }
+  },
+
+  archiveHabit: async (id) => {
+    const previous = get().habits;
+    // Optimistic removal from the active list
+    set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
+    try {
+      await apiDeleteHabit(id);
+    } catch {
+      set({ habits: previous });
+    }
   },
 }));

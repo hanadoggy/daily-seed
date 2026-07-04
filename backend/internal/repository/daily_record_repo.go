@@ -13,6 +13,7 @@ import (
 type DailyRecordRepository interface {
 	FindByDate(ctx context.Context, date string) (*model.DailyRecord, error)
 	Upsert(ctx context.Context, record *model.DailyRecord) error
+	PatchByDate(ctx context.Context, date string, setFields bson.M) error
 }
 
 type mongoDailyRecordRepo struct {
@@ -42,4 +43,18 @@ func (r *mongoDailyRecordRepo) Upsert(ctx context.Context, record *model.DailyRe
 
 	_, err := r.col.UpdateOne(ctx, filter, update, opts)
 	return err
+}
+
+func (r *mongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
+	filter := bson.M{"_id": date}
+	update := bson.M{"$set": setFields}
+
+	result, err := r.col.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+	return nil
 }

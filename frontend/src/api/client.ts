@@ -1,4 +1,4 @@
-import type { DailyRecord } from '../types';
+import type { DailyRecord, Task, Habit } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
@@ -32,6 +32,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// --- Daily Record ---
+
 export function fetchDailyRecord(date: string): Promise<DailyRecord> {
   return request<DailyRecord>(`/daily/${date}`);
 }
@@ -44,4 +46,52 @@ export function patchDailyRecord(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+}
+
+// --- Tasks ---
+
+export function fetchTasks(): Promise<Task[]> {
+  return request<Task[]>('/tasks');
+}
+
+export function createTask(task: Omit<Task, 'id' | 'status'>): Promise<Task> {
+  return request<Task>('/tasks', {
+    method: 'POST',
+    body: JSON.stringify(task),
+  });
+}
+
+export function updateTask(id: string, task: Omit<Task, 'id' | 'status'>): Promise<Task> {
+  return request<Task>(`/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(task),
+  });
+}
+
+export function deleteTask(id: string): Promise<void> {
+  return request(`/tasks/${id}`, { method: 'DELETE' });
+}
+
+// --- Habits ---
+
+export function fetchHabits(): Promise<Habit[]> {
+  return request<Habit[]>('/habits');
+}
+
+export function createHabit(habit: Omit<Habit, 'id' | 'status'>): Promise<Habit> {
+  return request<Habit>('/habits', {
+    method: 'POST',
+    body: JSON.stringify(habit),
+  });
+}
+
+export function updateHabit(id: string, habit: Omit<Habit, 'id' | 'status'>): Promise<Habit> {
+  return request<Habit>(`/habits/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(habit),
+  });
+}
+
+export function deleteHabit(id: string): Promise<void> {
+  return request(`/habits/${id}`, { method: 'DELETE' });
 }

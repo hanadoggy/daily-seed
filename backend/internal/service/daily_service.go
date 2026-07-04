@@ -69,12 +69,38 @@ func (s *dailyService) UpdateDailyRecord(ctx context.Context, date string, patch
 		return nil, fmt.Errorf("daily record not found for date: %s", date)
 	}
 
-	// Apply flat patch fields onto the record via repository.
-	if err := s.dailyRepo.Upsert(ctx, existing); err != nil {
-		return nil, fmt.Errorf("updating daily record: %w", err)
+	// Build flat $set fields from the patch.
+	setFields := buildSetFields(patch)
+	if len(setFields) == 0 {
+		return existing, nil
+	}
+
+	if err := s.dailyRepo.PatchByDate(ctx, date, setFields); err != nil {
+		return nil, fmt.Errorf("patching daily record: %w", err)
 	}
 
 	return s.dailyRepo.FindByDate(ctx, date)
+}
+
+// buildSetFields converts a nested patch map into flat dot-notation keys
+// suitable for MongoDB $set. Supported top-level keys: context, tasks, habits, journal.
+func buildSetFields(patch map[string]interface{}) map[string]interface{} {
+	set := make(map[string]interface{})
+
+	if v, ok := patch["context"]; ok {
+		set["context"] = v
+	}
+	if v, ok := patch["tasks"]; ok {
+		set["tasks"] = v
+	}
+	if v, ok := patch["habits"]; ok {
+		set["habits"] = v
+	}
+	if v, ok := patch["journal"]; ok {
+		set["journal"] = v
+	}
+
+	return set
 }
 
 func (s *dailyService) generateDailyRecord(ctx context.Context, date string) (*model.DailyRecord, error) {
