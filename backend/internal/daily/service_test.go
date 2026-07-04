@@ -1,12 +1,11 @@
-package service_test
+package daily_test
 
 import (
 	"context"
+	"daily-seed/internal/daily"
+	"daily-seed/internal/habit"
+	"daily-seed/internal/task"
 	"testing"
-
-	"daily-seed/internal/model"
-	"daily-seed/internal/repository/mocks"
-	"daily-seed/internal/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,13 +16,13 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 	date := "2023-10-10"
 
 	t.Run("existing_record", func(t *testing.T) {
-		mockDailyRepo := new(mocks.MockDailyRecordRepository)
-		mockTaskRepo := new(mocks.MockTaskRepository)
-		mockHabitRepo := new(mocks.MockHabitRepository)
+		mockDailyRepo := new(daily.MockDailyRecordRepository)
+		mockTaskRepo := new(task.MockTaskRepository)
+		mockHabitRepo := new(habit.MockHabitRepository)
 
-		svc := service.NewDailyService(mockDailyRepo, mockTaskRepo, mockHabitRepo)
+		svc := daily.NewDailyService(mockDailyRepo, mockTaskRepo, mockHabitRepo)
 
-		expected := &model.DailyRecord{ID: date, Date: date}
+		expected := &daily.DailyRecord{ID: date, Date: date}
 		mockDailyRepo.On("FindByDate", ctx, date).Return(expected, nil)
 
 		record, err := svc.GetDailyRecord(ctx, date)
@@ -33,24 +32,24 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 	})
 
 	t.Run("generate_new_record", func(t *testing.T) {
-		mockDailyRepo := new(mocks.MockDailyRecordRepository)
-		mockTaskRepo := new(mocks.MockTaskRepository)
-		mockHabitRepo := new(mocks.MockHabitRepository)
+		mockDailyRepo := new(daily.MockDailyRecordRepository)
+		mockTaskRepo := new(task.MockTaskRepository)
+		mockHabitRepo := new(habit.MockHabitRepository)
 
-		svc := service.NewDailyService(mockDailyRepo, mockTaskRepo, mockHabitRepo)
+		svc := daily.NewDailyService(mockDailyRepo, mockTaskRepo, mockHabitRepo)
 
 		// FindByDate returns nil to trigger generation
-		mockDailyRepo.On("FindByDate", ctx, date).Return((*model.DailyRecord)(nil), nil)
+		mockDailyRepo.On("FindByDate", ctx, date).Return((*daily.DailyRecord)(nil), nil)
 
 		// Mock fetching tasks and habits
-		tasks := []model.Task{{ID: "t1", Metrics: model.TaskMetrics{DailyTarget: 2}}}
+		tasks := []task.Task{{ID: "t1", Metrics: task.TaskMetrics{DailyTarget: 2}}}
 		mockTaskRepo.On("FindActiveTasks", ctx).Return(tasks, nil)
 
-		habits := []model.Habit{{ID: "h1"}}
+		habits := []habit.Habit{{ID: "h1"}}
 		mockHabitRepo.On("FindActiveHabits", ctx).Return(habits, nil)
 
 		// Mock Upsert
-		mockDailyRepo.On("Upsert", ctx, mock.AnythingOfType("*model.DailyRecord")).Return(nil)
+		mockDailyRepo.On("Upsert", ctx, mock.AnythingOfType("*daily.DailyRecord")).Return(nil)
 
 		record, err := svc.GetDailyRecord(ctx, date)
 		assert.NoError(t, err)

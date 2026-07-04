@@ -1,4 +1,4 @@
-package model
+package daily
 
 import (
 	"context"
@@ -18,7 +18,7 @@ type DailyRecord struct {
 }
 
 type DayContext struct {
-	Mode    string `json:"mode" bson:"mode"`       // "Growth" | "Rest" | "Work"
+	Mode    string `json:"mode" bson:"mode"` // "Growth" | "Rest" | "Work"
 	Weather string `json:"weather" bson:"weather"`
 }
 

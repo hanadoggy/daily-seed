@@ -1,27 +1,25 @@
-package service
+package daily
 
 import (
 	"context"
+	"daily-seed/internal/habit"
+	"daily-seed/internal/task"
 	"fmt"
 	"log/slog"
-
-	"daily-seed/internal/model"
 )
 
-
-
-type dailyService struct {
-	dailyRepo model.DailyRecordRepository
-	taskRepo  model.TaskRepository
-	habitRepo model.HabitRepository
+type DailyServiceImpl struct {
+	dailyRepo DailyRecordRepository
+	taskRepo  task.TaskRepository
+	habitRepo habit.HabitRepository
 }
 
 func NewDailyService(
-	dailyRepo model.DailyRecordRepository,
-	taskRepo model.TaskRepository,
-	habitRepo model.HabitRepository,
-) model.DailyService {
-	return &dailyService{
+	dailyRepo DailyRecordRepository,
+	taskRepo task.TaskRepository,
+	habitRepo habit.HabitRepository,
+) DailyService {
+	return &DailyServiceImpl{
 		dailyRepo: dailyRepo,
 		taskRepo:  taskRepo,
 		habitRepo: habitRepo,
@@ -30,7 +28,7 @@ func NewDailyService(
 
 // GetDailyRecord retrieves the DailyRecord for the given date.
 // If no record exists, it generates one from the currently active tasks and habits.
-func (s *dailyService) GetDailyRecord(ctx context.Context, date string) (*model.DailyRecord, error) {
+func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*DailyRecord, error) {
 	record, err := s.dailyRepo.FindByDate(ctx, date)
 	if err != nil {
 		return nil, fmt.Errorf("finding daily record: %w", err)
@@ -55,7 +53,7 @@ func (s *dailyService) GetDailyRecord(ctx context.Context, date string) (*model.
 
 // UpdateDailyRecord applies a partial update to the daily record, then returns
 // the full updated record.
-func (s *dailyService) UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*model.DailyRecord, error) {
+func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*DailyRecord, error) {
 	// Ensure the record exists first (generate if needed).
 	existing, err := s.GetDailyRecord(ctx, date)
 	if err != nil {
@@ -99,7 +97,7 @@ func buildSetFields(patch map[string]interface{}) map[string]interface{} {
 	return set
 }
 
-func (s *dailyService) generateDailyRecord(ctx context.Context, date string) (*model.DailyRecord, error) {
+func (s *DailyServiceImpl) generateDailyRecord(ctx context.Context, date string) (*DailyRecord, error) {
 	tasks, err := s.taskRepo.FindActiveTasks(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("fetching active tasks: %w", err)
@@ -110,9 +108,9 @@ func (s *dailyService) generateDailyRecord(ctx context.Context, date string) (*m
 		return nil, fmt.Errorf("fetching active habits: %w", err)
 	}
 
-	taskEntries := make([]model.TaskEntry, 0, len(tasks))
+	taskEntries := make([]TaskEntry, 0, len(tasks))
 	for _, t := range tasks {
-		taskEntries = append(taskEntries, model.TaskEntry{
+		taskEntries = append(taskEntries, TaskEntry{
 			TaskID:       t.ID,
 			TargetAmount: t.Metrics.DailyTarget,
 			ActualAmount: 0,
@@ -120,24 +118,24 @@ func (s *dailyService) generateDailyRecord(ctx context.Context, date string) (*m
 		})
 	}
 
-	habitEntries := make([]model.HabitEntry, 0, len(habits))
+	habitEntries := make([]HabitEntry, 0, len(habits))
 	for _, h := range habits {
-		habitEntries = append(habitEntries, model.HabitEntry{
+		habitEntries = append(habitEntries, HabitEntry{
 			HabitID:     h.ID,
 			IsCompleted: false,
 		})
 	}
 
-	return &model.DailyRecord{
+	return &DailyRecord{
 		ID:   date,
 		Date: date,
-		Context: model.DayContext{
+		Context: DayContext{
 			Mode:    "Growth",
 			Weather: "",
 		},
 		Tasks:  taskEntries,
 		Habits: habitEntries,
-		Journal: model.Journal{
+		Journal: Journal{
 			OneLineReview:  "",
 			ThreeLineDiary: "",
 		},

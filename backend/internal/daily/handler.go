@@ -1,11 +1,10 @@
-package handler
+package daily
 
 import (
+	"daily-seed/internal/common"
 	"log/slog"
 	"net/http"
 	"regexp"
-
-	"daily-seed/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,10 +12,10 @@ import (
 var dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 type DailyHandler struct {
-	svc model.DailyService
+	svc DailyService
 }
 
-func NewDailyHandler(svc model.DailyService) *DailyHandler {
+func NewDailyHandler(svc DailyService) *DailyHandler {
 	return &DailyHandler{svc: svc}
 }
 
@@ -31,7 +30,7 @@ func (h *DailyHandler) RegisterRoutes(rg *gin.RouterGroup) {
 func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 	date := c.Param("date")
 	if !dateRegex.MatchString(date) {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_DATE",
 			Message: "Date must be in YYYY-MM-DD format",
 		})
@@ -41,7 +40,7 @@ func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 	record, err := h.svc.GetDailyRecord(c.Request.Context(), date)
 	if err != nil {
 		slog.Error("failed to get daily record", slog.String("date", date), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to retrieve daily record",
 		})
@@ -56,7 +55,7 @@ func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 	date := c.Param("date")
 	if !dateRegex.MatchString(date) {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_DATE",
 			Message: "Date must be in YYYY-MM-DD format",
 		})
@@ -65,7 +64,7 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 
 	var patch map[string]interface{}
 	if err := c.ShouldBindJSON(&patch); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_BODY",
 			Message: "Request body must be valid JSON",
 		})
@@ -75,7 +74,7 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 	record, err := h.svc.UpdateDailyRecord(c.Request.Context(), date, patch)
 	if err != nil {
 		slog.Error("failed to update daily record", slog.String("date", date), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to update daily record",
 		})

@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"daily-seed/internal/config"
-	"daily-seed/internal/handler"
+	"daily-seed/internal/daily"
+	"daily-seed/internal/habit"
 	"daily-seed/internal/middleware"
-	"daily-seed/internal/repository"
-	"daily-seed/internal/service"
+	"daily-seed/internal/task"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -48,17 +48,17 @@ func main() {
 	db := client.Database(cfg.MongoDBName)
 
 	// Wire dependencies.
-	habitRepo := repository.NewHabitRepository(db)
-	taskRepo := repository.NewTaskRepository(db)
-	dailyRecordRepo := repository.NewDailyRecordRepository(db)
+	habitRepo := habit.NewHabitRepository(db)
+	taskRepo := task.NewTaskRepository(db)
+	dailyRecordRepo := daily.NewDailyRecordRepository(db)
 
-	dailySvc := service.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
-	taskSvc := service.NewTaskService(taskRepo)
-	habitSvc := service.NewHabitService(habitRepo)
+	dailySvc := daily.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
+	taskSvc := task.NewTaskService(taskRepo)
+	habitSvc := habit.NewHabitService(habitRepo)
 
-	dailyHandler := handler.NewDailyHandler(dailySvc)
-	taskHandler := handler.NewTaskHandler(taskSvc)
-	habitHandler := handler.NewHabitHandler(habitSvc)
+	dailyHandler := daily.NewDailyHandler(dailySvc)
+	taskHandler := task.NewTaskHandler(taskSvc)
+	habitHandler := habit.NewHabitHandler(habitSvc)
 
 	// Gin setup.
 	gin.SetMode(gin.ReleaseMode)

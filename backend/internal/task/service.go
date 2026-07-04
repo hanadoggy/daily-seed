@@ -1,4 +1,4 @@
-package service
+package task
 
 import (
 	"context"
@@ -6,25 +6,22 @@ import (
 	"strings"
 	"time"
 
-	"daily-seed/internal/model"
 	"daily-seed/pkg/jst"
 )
 
-
-
-type taskService struct {
-	repo model.TaskRepository
+type TaskServiceImpl struct {
+	repo TaskRepository
 }
 
-func NewTaskService(repo model.TaskRepository) model.TaskService {
-	return &taskService{repo: repo}
+func NewTaskService(repo TaskRepository) TaskService {
+	return &TaskServiceImpl{repo: repo}
 }
 
-func (s *taskService) List(ctx context.Context) ([]model.Task, error) {
+func (s *TaskServiceImpl) List(ctx context.Context) ([]Task, error) {
 	return s.repo.FindActiveTasks(ctx)
 }
 
-func (s *taskService) Get(ctx context.Context, id string) (*model.Task, error) {
+func (s *TaskServiceImpl) Get(ctx context.Context, id string) (*Task, error) {
 	task, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("finding task: %w", err)
@@ -46,7 +43,7 @@ var validTaskTypes = map[string]bool{
 	"boolean":      true,
 }
 
-func validateTask(task *model.Task) error {
+func validateTask(task *Task) error {
 	if strings.TrimSpace(task.Title) == "" {
 		return fmt.Errorf("title is required")
 	}
@@ -62,7 +59,7 @@ func validateTask(task *model.Task) error {
 	return nil
 }
 
-func (s *taskService) Create(ctx context.Context, task *model.Task) (*model.Task, error) {
+func (s *TaskServiceImpl) Create(ctx context.Context, task *Task) (*Task, error) {
 	if err := validateTask(task); err != nil {
 		return nil, err
 	}
@@ -88,7 +85,7 @@ func (s *taskService) Create(ctx context.Context, task *model.Task) (*model.Task
 	return task, nil
 }
 
-func (s *taskService) Update(ctx context.Context, task *model.Task) (*model.Task, error) {
+func (s *TaskServiceImpl) Update(ctx context.Context, task *Task) (*Task, error) {
 	existing, err := s.repo.FindByID(ctx, task.ID)
 	if err != nil {
 		return nil, fmt.Errorf("finding task: %w", err)
@@ -109,7 +106,7 @@ func (s *taskService) Update(ctx context.Context, task *model.Task) (*model.Task
 	return task, nil
 }
 
-func (s *taskService) Archive(ctx context.Context, id string) error {
+func (s *TaskServiceImpl) Archive(ctx context.Context, id string) error {
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("finding task: %w", err)

@@ -1,4 +1,4 @@
-package model
+package habit
 
 import "context"
 
@@ -7,7 +7,7 @@ type Habit struct {
 	ID       string `json:"id" bson:"_id"`
 	Title    string `json:"title" bson:"title"`
 	Category string `json:"category" bson:"category"`
-	Status   string `json:"status" bson:"status"`     // active, archived
+	Status   string `json:"status" bson:"status"` // active, archived
 }
 
 type HabitService interface {

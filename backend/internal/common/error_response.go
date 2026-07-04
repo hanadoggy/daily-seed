@@ -1,4 +1,4 @@
-package model
+package common
 
 // ErrorResponse is the standardized API error format.
 type ErrorResponse struct {

@@ -1,4 +1,4 @@
-package service
+package habit
 
 import (
 	"context"
@@ -6,25 +6,22 @@ import (
 	"strings"
 	"time"
 
-	"daily-seed/internal/model"
 	"daily-seed/pkg/jst"
 )
 
-
-
-type habitService struct {
-	repo model.HabitRepository
+type HabitServiceImpl struct {
+	repo HabitRepository
 }
 
-func NewHabitService(repo model.HabitRepository) model.HabitService {
-	return &habitService{repo: repo}
+func NewHabitService(repo HabitRepository) HabitService {
+	return &HabitServiceImpl{repo: repo}
 }
 
-func (s *habitService) List(ctx context.Context) ([]model.Habit, error) {
+func (s *HabitServiceImpl) List(ctx context.Context) ([]Habit, error) {
 	return s.repo.FindActiveHabits(ctx)
 }
 
-func (s *habitService) Get(ctx context.Context, id string) (*model.Habit, error) {
+func (s *HabitServiceImpl) Get(ctx context.Context, id string) (*Habit, error) {
 	habit, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("finding habit: %w", err)
@@ -35,7 +32,7 @@ func (s *habitService) Get(ctx context.Context, id string) (*model.Habit, error)
 	return habit, nil
 }
 
-func (s *habitService) Create(ctx context.Context, habit *model.Habit) (*model.Habit, error) {
+func (s *HabitServiceImpl) Create(ctx context.Context, habit *Habit) (*Habit, error) {
 	if strings.TrimSpace(habit.Title) == "" {
 		return nil, fmt.Errorf("title is required")
 	}
@@ -52,7 +49,7 @@ func (s *habitService) Create(ctx context.Context, habit *model.Habit) (*model.H
 	return habit, nil
 }
 
-func (s *habitService) Update(ctx context.Context, habit *model.Habit) (*model.Habit, error) {
+func (s *HabitServiceImpl) Update(ctx context.Context, habit *Habit) (*Habit, error) {
 	existing, err := s.repo.FindByID(ctx, habit.ID)
 	if err != nil {
 		return nil, fmt.Errorf("finding habit: %w", err)
@@ -73,7 +70,7 @@ func (s *habitService) Update(ctx context.Context, habit *model.Habit) (*model.H
 	return habit, nil
 }
 
-func (s *habitService) Archive(ctx context.Context, id string) error {
+func (s *HabitServiceImpl) Archive(ctx context.Context, id string) error {
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("finding habit: %w", err)

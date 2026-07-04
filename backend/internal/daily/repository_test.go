@@ -1,12 +1,11 @@
-package repository_test
+package daily_test
 
 import (
 	"context"
+	"daily-seed/internal/daily"
+	"daily-seed/internal/testutil"
 	"testing"
 	"time"
-
-	"daily-seed/internal/model"
-	"daily-seed/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,22 +16,22 @@ func TestDailyRecordRepository(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	repo := repository.NewDailyRecordRepository(testDB)
+	repo := daily.NewDailyRecordRepository(testutil.DB)
 	date := "2023-11-11"
 
 	t.Run("FindByDate_NotFound", func(t *testing.T) {
-		clearDB(ctx)
+		testutil.ClearDB(ctx)
 		record, err := repo.FindByDate(ctx, date)
 		require.NoError(t, err)
 		assert.Nil(t, record)
 	})
 
 	t.Run("Upsert_And_FindByDate", func(t *testing.T) {
-		clearDB(ctx)
-		record := &model.DailyRecord{
+		testutil.ClearDB(ctx)
+		record := &daily.DailyRecord{
 			ID:   date,
 			Date: date,
-			Context: model.DayContext{
+			Context: daily.DayContext{
 				Mode: "Growth",
 			},
 		}
@@ -47,8 +46,8 @@ func TestDailyRecordRepository(t *testing.T) {
 	})
 
 	t.Run("PatchByDate", func(t *testing.T) {
-		clearDB(ctx)
-		record := &model.DailyRecord{ID: date, Date: date}
+		testutil.ClearDB(ctx)
+		record := &daily.DailyRecord{ID: date, Date: date}
 		require.NoError(t, repo.Upsert(ctx, record))
 
 		err := repo.PatchByDate(ctx, date, bson.M{"context.mode": "British Green"})

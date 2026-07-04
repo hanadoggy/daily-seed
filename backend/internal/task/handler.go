@@ -1,20 +1,19 @@
-package handler
+package task
 
 import (
+	"daily-seed/internal/common"
 	"log/slog"
 	"net/http"
 	"strings"
-
-	"daily-seed/internal/model"
 
 	"github.com/gin-gonic/gin"
 )
 
 type TaskHandler struct {
-	svc model.TaskService
+	svc TaskService
 }
 
-func NewTaskHandler(svc model.TaskService) *TaskHandler {
+func NewTaskHandler(svc TaskService) *TaskHandler {
 	return &TaskHandler{svc: svc}
 }
 
@@ -30,7 +29,7 @@ func (h *TaskHandler) List(c *gin.Context) {
 	tasks, err := h.svc.List(c.Request.Context())
 	if err != nil {
 		slog.Error("failed to list tasks", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to list tasks",
 		})
@@ -46,14 +45,14 @@ func (h *TaskHandler) Get(c *gin.Context) {
 	task, err := h.svc.Get(c.Request.Context(), id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, model.ErrorResponse{
+			c.JSON(http.StatusNotFound, common.ErrorResponse{
 				Code:    "NOT_FOUND",
 				Message: err.Error(),
 			})
 			return
 		}
 		slog.Error("failed to get task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to get task",
 		})
@@ -64,9 +63,9 @@ func (h *TaskHandler) Get(c *gin.Context) {
 }
 
 func (h *TaskHandler) Create(c *gin.Context) {
-	var task model.Task
+	var task Task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_BODY",
 			Message: "Request body must be valid JSON",
 		})
@@ -76,7 +75,7 @@ func (h *TaskHandler) Create(c *gin.Context) {
 	created, err := h.svc.Create(c.Request.Context(), &task)
 	if err != nil {
 		// Validation errors are returned as-is.
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
 			Message: err.Error(),
 		})
@@ -89,9 +88,9 @@ func (h *TaskHandler) Create(c *gin.Context) {
 func (h *TaskHandler) Update(c *gin.Context) {
 	id := c.Param("id")
 
-	var task model.Task
+	var task Task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_BODY",
 			Message: "Request body must be valid JSON",
 		})
@@ -102,13 +101,13 @@ func (h *TaskHandler) Update(c *gin.Context) {
 	updated, err := h.svc.Update(c.Request.Context(), &task)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, model.ErrorResponse{
+			c.JSON(http.StatusNotFound, common.ErrorResponse{
 				Code:    "NOT_FOUND",
 				Message: err.Error(),
 			})
 			return
 		}
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
 			Message: err.Error(),
 		})
@@ -123,14 +122,14 @@ func (h *TaskHandler) Archive(c *gin.Context) {
 
 	if err := h.svc.Archive(c.Request.Context(), id); err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, model.ErrorResponse{
+			c.JSON(http.StatusNotFound, common.ErrorResponse{
 				Code:    "NOT_FOUND",
 				Message: err.Error(),
 			})
 			return
 		}
 		slog.Error("failed to archive task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to archive task",
 		})

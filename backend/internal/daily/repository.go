@@ -1,27 +1,23 @@
-package repository
+package daily
 
 import (
 	"context"
-
-	"daily-seed/internal/model"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-
-
-type mongoDailyRecordRepo struct {
+type MongoDailyRecordRepo struct {
 	col *mongo.Collection
 }
 
-func NewDailyRecordRepository(db *mongo.Database) model.DailyRecordRepository {
-	return &mongoDailyRecordRepo{col: db.Collection("dailyRecords")}
+func NewDailyRecordRepository(db *mongo.Database) DailyRecordRepository {
+	return &MongoDailyRecordRepo{col: db.Collection("dailyRecords")}
 }
 
-func (r *mongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*model.DailyRecord, error) {
-	var record model.DailyRecord
+func (r *MongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*DailyRecord, error) {
+	var record DailyRecord
 	err := r.col.FindOne(ctx, bson.M{"_id": date}).Decode(&record)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -32,7 +28,7 @@ func (r *mongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*mo
 	return &record, nil
 }
 
-func (r *mongoDailyRecordRepo) Upsert(ctx context.Context, record *model.DailyRecord) error {
+func (r *MongoDailyRecordRepo) Upsert(ctx context.Context, record *DailyRecord) error {
 	filter := bson.M{"_id": record.ID}
 	update := bson.M{"$set": record}
 	opts := options.Update().SetUpsert(true)
@@ -41,7 +37,7 @@ func (r *mongoDailyRecordRepo) Upsert(ctx context.Context, record *model.DailyRe
 	return err
 }
 
-func (r *mongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
+func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
 	filter := bson.M{"_id": date}
 	update := bson.M{"$set": setFields}
 

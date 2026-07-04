@@ -1,12 +1,11 @@
-package repository_test
+package task_test
 
 import (
 	"context"
+	"daily-seed/internal/task"
+	"daily-seed/internal/testutil"
 	"testing"
 	"time"
-
-	"daily-seed/internal/model"
-	"daily-seed/internal/repository"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,11 +15,11 @@ func TestTaskRepository(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	repo := repository.NewTaskRepository(testDB)
+	repo := task.NewTaskRepository(testutil.DB)
 
 	t.Run("Create_And_FindByID", func(t *testing.T) {
-		clearDB(ctx)
-		task := &model.Task{
+		testutil.ClearDB(ctx)
+		task := &task.Task{
 			ID:     "task_1",
 			Title:  "Test Task",
 			Status: "active",
@@ -36,9 +35,9 @@ func TestTaskRepository(t *testing.T) {
 	})
 
 	t.Run("FindActiveTasks", func(t *testing.T) {
-		clearDB(ctx)
-		require.NoError(t, repo.Create(ctx, &model.Task{ID: "t1", Status: "active"}))
-		require.NoError(t, repo.Create(ctx, &model.Task{ID: "t2", Status: "archived"}))
+		testutil.ClearDB(ctx)
+		require.NoError(t, repo.Create(ctx, &task.Task{ID: "t1", Status: "active"}))
+		require.NoError(t, repo.Create(ctx, &task.Task{ID: "t2", Status: "archived"}))
 
 		active, err := repo.FindActiveTasks(ctx)
 		require.NoError(t, err)
@@ -47,8 +46,8 @@ func TestTaskRepository(t *testing.T) {
 	})
 
 	t.Run("Update_And_Delete", func(t *testing.T) {
-		clearDB(ctx)
-		task := &model.Task{ID: "t1", Title: "Old", Status: "active"}
+		testutil.ClearDB(ctx)
+		task := &task.Task{ID: "t1", Title: "Old", Status: "active"}
 		require.NoError(t, repo.Create(ctx, task))
 
 		task.Title = "New"
