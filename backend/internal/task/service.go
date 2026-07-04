@@ -19,7 +19,7 @@ func NewTaskService(repo TaskRepository, aggregator TaskProgressAggregator) Task
 }
 
 func (s *TaskServiceImpl) List(ctx context.Context) ([]Task, error) {
-	return s.repo.FindActiveTasks(ctx)
+	return s.repo.FindAll(ctx)
 }
 
 func (s *TaskServiceImpl) Get(ctx context.Context, id string) (*Task, error) {

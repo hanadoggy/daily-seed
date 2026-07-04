@@ -28,6 +28,11 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
   const { tasks, habits, archiveTask, archiveHabit } = useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [formState, setFormState] = useState<FormState>({ mode: 'closed' });
+  const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null);
+  const [confirmingHabitId, setConfirmingHabitId] = useState<string | null>(null);
+
+  const activeTasks = tasks.filter((t) => t.status === 'active');
+  const activeHabits = habits.filter((h) => h.status === 'active');
 
   const showingForm = formState.mode !== 'closed';
 
@@ -55,6 +60,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             onClick={() => {
               setActiveTab('tasks');
               setFormState({ mode: 'closed' });
+              setConfirmingTaskId(null);
             }}
             className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'tasks'
@@ -63,12 +69,13 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             }`}
           >
             <ListTodo className="h-3.5 w-3.5" />
-            Tasks ({tasks.length})
+            Tasks ({activeTasks.length})
           </button>
           <button
             onClick={() => {
               setActiveTab('habits');
               setFormState({ mode: 'closed' });
+              setConfirmingHabitId(null);
             }}
             className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
               activeTab === 'habits'
@@ -77,7 +84,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             }`}
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Habits ({habits.length})
+            Habits ({activeHabits.length})
           </button>
         </div>
 
@@ -117,12 +124,12 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
               {/* List */}
               {activeTab === 'tasks' && (
                 <div className="space-y-2">
-                  {tasks.length === 0 && (
+                  {activeTasks.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">
-                      No tasks yet. Create one to get started.
+                      No active tasks yet. Create one to get started.
                     </p>
                   )}
-                  {tasks.map((task) => (
+                  {activeTasks.map((task) => (
                     <div
                       key={task.id}
                       className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
@@ -139,21 +146,48 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => setFormState({ mode: 'edit-task', task })}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon-xs"
-                          onClick={() => archiveTask(task.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className={`flex gap-1 transition-opacity ${confirmingTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        {confirmingTaskId === task.id ? (
+                          <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
+                            <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                              onClick={() => {
+                                archiveTask(task.id);
+                                setConfirmingTaskId(null);
+                              }}
+                            >
+                              ✅
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                              onClick={() => setConfirmingTaskId(null)}
+                            >
+                              ❌
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => setFormState({ mode: 'edit-task', task })}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon-xs"
+                              onClick={() => setConfirmingTaskId(task.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -162,12 +196,12 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
 
               {activeTab === 'habits' && (
                 <div className="space-y-2">
-                  {habits.length === 0 && (
+                  {activeHabits.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">
-                      No habits yet. Create one to get started.
+                      No active habits yet. Create one to get started.
                     </p>
                   )}
-                  {habits.map((habit) => (
+                  {activeHabits.map((habit) => (
                     <div
                       key={habit.id}
                       className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
@@ -178,21 +212,48 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                           {habit.category}
                         </p>
                       </div>
-                      <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => setFormState({ mode: 'edit-habit', habit })}
-                        >
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon-xs"
-                          onClick={() => archiveHabit(habit.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className={`flex gap-1 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        {confirmingHabitId === habit.id ? (
+                          <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
+                            <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                              onClick={() => {
+                                archiveHabit(habit.id);
+                                setConfirmingHabitId(null);
+                              }}
+                            >
+                              ✅
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                              onClick={() => setConfirmingHabitId(null)}
+                            >
+                              ❌
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon-xs"
+                              onClick={() => setFormState({ mode: 'edit-habit', habit })}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="icon-xs"
+                              onClick={() => setConfirmingHabitId(habit.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

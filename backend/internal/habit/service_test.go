@@ -334,14 +334,14 @@ func TestHabitService_List(t *testing.T) {
 		{
 			name: "Pass: successful list",
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindActiveHabits", mock.Anything).Return([]Habit{{ID: "1"}, {ID: "2"}}, nil)
+				m.On("FindAll", mock.Anything).Return([]Habit{{ID: "1"}, {ID: "2"}}, nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: db error",
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindActiveHabits", mock.Anything).Return(nil, errors.New("db error"))
+				m.On("FindAll", mock.Anything).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 		},

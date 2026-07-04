@@ -320,14 +320,14 @@ func TestTaskService_List(t *testing.T) {
 		{
 			name: "Pass: successful list",
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindActiveTasks", mock.Anything).Return([]task.Task{{ID: "1"}}, nil)
+				m.On("FindAll", mock.Anything).Return([]task.Task{{ID: "1"}}, nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: db error",
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindActiveTasks", mock.Anything).Return(nil, errors.New("db error"))
+				m.On("FindAll", mock.Anything).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 		},

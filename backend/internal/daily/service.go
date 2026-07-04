@@ -35,6 +35,14 @@ func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*Da
 	}
 
 	if record != nil {
+		updated, err := s.appendMissingEntries(ctx, record)
+		if err != nil {
+			slog.Warn("failed to append missing entries to daily record", slog.String("error", err.Error()))
+		} else if updated {
+			if err := s.dailyRepo.Upsert(ctx, record); err != nil {
+				return nil, fmt.Errorf("persisting updated daily record: %w", err)
+			}
+		}
 		return record, nil
 	}
 
@@ -140,4 +148,48 @@ func (s *DailyServiceImpl) generateDailyRecord(ctx context.Context, date string)
 			ThreeLineDiary: "",
 		},
 	}, nil
+}
+
+func (s *DailyServiceImpl) appendMissingEntries(ctx context.Context, record *DailyRecord) (bool, error) {
+	updated := false
+
+	tasks, err := s.taskRepo.FindActiveTasks(ctx)
+	if err != nil {
+		return false, fmt.Errorf("fetching active tasks: %w", err)
+	}
+	existingTasks := make(map[string]bool)
+	for _, t := range record.Tasks {
+		existingTasks[t.TaskID] = true
+	}
+	for _, t := range tasks {
+		if !existingTasks[t.ID] {
+			record.Tasks = append(record.Tasks, TaskEntry{
+				TaskID:       t.ID,
+				TargetAmount: t.Metrics.DailyTarget,
+				ActualAmount: 0,
+				IsCompleted:  false,
+			})
+			updated = true
+		}
+	}
+
+	habits, err := s.habitRepo.FindActiveHabits(ctx)
+	if err != nil {
+		return false, fmt.Errorf("fetching active habits: %w", err)
+	}
+	existingHabits := make(map[string]bool)
+	for _, h := range record.Habits {
+		existingHabits[h.HabitID] = true
+	}
+	for _, h := range habits {
+		if !existingHabits[h.ID] {
+			record.Habits = append(record.Habits, HabitEntry{
+				HabitID:     h.ID,
+				IsCompleted: false,
+			})
+			updated = true
+		}
+	}
+
+	return updated, nil
 }

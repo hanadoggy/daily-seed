@@ -123,8 +123,12 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
 
     set({ dailyRecord: { ...dailyRecord, tasks: updatedTasks } });
 
-    patchDailyRecord(selectedDate, { tasks: updatedTasks }).catch(() => {
-      set({ dailyRecord: previousRecord });
-    });
+    patchDailyRecord(selectedDate, { tasks: updatedTasks })
+      .then(() => {
+        get().fetchProgress();
+      })
+      .catch(() => {
+        set({ dailyRecord: previousRecord });
+      });
   },
 });

@@ -13,6 +13,7 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
     try {
       const created = await apiCreateHabit(habit);
       set((state) => ({ habits: [...state.habits, created] }));
+      get().setDateAndFetch(get().selectedDate);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create habit';
       set({ error: message });
@@ -26,6 +27,7 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
       set((state) => ({
         habits: state.habits.map((h) => (h.id === id ? updated : h)),
       }));
+      get().setDateAndFetch(get().selectedDate);
     } catch (err) {
       set({ habits: previous });
       const message = err instanceof Error ? err.message : 'Failed to update habit';
@@ -38,6 +40,7 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
     set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
     try {
       await apiDeleteHabit(id);
+      get().setDateAndFetch(get().selectedDate);
     } catch {
       set({ habits: previous });
     }

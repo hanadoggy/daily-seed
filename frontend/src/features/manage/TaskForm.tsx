@@ -26,6 +26,8 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [type, setType] = useState<string>(task?.type ?? 'quantitative');
   const [dailyTarget, setDailyTarget] = useState(task?.metrics.dailyTarget ?? 1);
   const [totalTarget, setTotalTarget] = useState(task?.metrics.totalTarget ?? 0);
+  const [weather, setWeather] = useState<Task['conditions']['weather']>(task?.conditions.weather ?? 'any');
+  const [mode, setMode] = useState<string>(task?.conditions.mode ?? 'any');
   const [submitting, setSubmitting] = useState(false);
 
   const isEditing = !!task;
@@ -44,8 +46,8 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         totalTarget,
       },
       conditions: {
-        weather: task?.conditions.weather ?? 'any',
-        mode: task?.conditions.mode ?? 'any',
+        weather,
+        mode,
       },
     };
 
@@ -111,6 +113,42 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                 {opt.label}
               </option>
             ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label htmlFor="task-weather" className="text-xs font-medium text-muted-foreground">
+            Weather Condition
+          </label>
+          <select
+            id="task-weather"
+            value={weather}
+            onChange={(e) => setWeather(e.target.value as any)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+          >
+            <option value="any">Any Weather</option>
+            <option value="sunny">Sunny ☀️</option>
+            <option value="rainy">Rainy 🌧️</option>
+          </select>
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="task-mode" className="text-xs font-medium text-muted-foreground">
+            Context Mode
+          </label>
+          <select
+            id="task-mode"
+            value={mode}
+            onChange={(e) => setMode(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+          >
+            <option value="any">Any Mode</option>
+            <option value="Growth">Growth 🌱</option>
+            <option value="Rest">Rest ☕️</option>
+            <option value="Office">Office 🏢</option>
+            <option value="Remote">Remote 🏠</option>
           </select>
         </div>
       </div>

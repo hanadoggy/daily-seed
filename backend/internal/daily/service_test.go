@@ -31,6 +31,8 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 			date: date,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil)
+				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
+				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 			},
 			expectError: false,
 			validate: func(t *testing.T, record *daily.DailyRecord) {
@@ -161,6 +163,8 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once() // First GetDailyRecord call
+				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
+				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 				dRepo.On("PatchByDate", ctx, date, mock.Anything).Return(nil)
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once() // Final FindByDate
 			},
@@ -171,6 +175,8 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 			patch: map[string]interface{}{"unknown": "field"},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once() // Only GetDailyRecord called
+				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
+				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 			},
 			expectError: false,
 		},
@@ -188,6 +194,8 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once()
+				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
+				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 				dRepo.On("PatchByDate", ctx, date, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,

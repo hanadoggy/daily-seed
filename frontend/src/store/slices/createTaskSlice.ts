@@ -16,6 +16,8 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
     try {
       const created = await apiCreateTask(task);
       set((state) => ({ tasks: [...state.tasks, created] }));
+      get().setDateAndFetch(get().selectedDate);
+      get().fetchProgress();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create task';
       set({ error: message });
@@ -29,6 +31,8 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       set((state) => ({
         tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
       }));
+      get().setDateAndFetch(get().selectedDate);
+      get().fetchProgress();
     } catch (err) {
       set({ tasks: previous });
       const message = err instanceof Error ? err.message : 'Failed to update task';
@@ -41,6 +45,8 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
     set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
     try {
       await apiDeleteTask(id);
+      get().setDateAndFetch(get().selectedDate);
+      get().fetchProgress();
     } catch {
       set({ tasks: previous });
     }

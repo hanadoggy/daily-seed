@@ -18,7 +18,7 @@ func NewHabitService(repo HabitRepository) HabitService {
 }
 
 func (s *HabitServiceImpl) List(ctx context.Context) ([]Habit, error) {
-	return s.repo.FindActiveHabits(ctx)
+	return s.repo.FindAll(ctx)
 }
 
 func (s *HabitServiceImpl) Get(ctx context.Context, id string) (*Habit, error) {
