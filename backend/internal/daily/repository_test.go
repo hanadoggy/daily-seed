@@ -57,4 +57,14 @@ func TestDailyRecordRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, "British Green", found.Context.Mode)
 	})
+
+	t.Run("Context_Cancellation", func(t *testing.T) {
+		cancelCtx, cancelFunc := context.WithCancel(context.Background())
+		cancelFunc() // cancel immediately
+		err := repo.Upsert(cancelCtx, &daily.DailyRecord{ID: "ctx_test"})
+		assert.ErrorIs(t, err, context.Canceled)
+		
+		_, err = repo.FindByDate(cancelCtx, "2023-11-11")
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }

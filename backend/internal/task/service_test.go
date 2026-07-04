@@ -65,6 +65,13 @@ func TestTaskService_Create(t *testing.T) {
 			errContains: "dailyTarget must be positive",
 		},
 		{
+			name: "Fail: negative total target",
+			task: &task.Task{Title: "Test", Section: "dev", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 1, TotalTarget: -10}},
+			mockSetup: func(m *task.MockTaskRepository) {},
+			expectError: true,
+			errContains: "totalTarget cannot be negative",
+		},
+		{
 			name: "Fail: repo error",
 			task: &task.Task{Title: "Test", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
@@ -127,6 +134,24 @@ func TestTaskService_Update(t *testing.T) {
 			},
 			expectError: true,
 			errContains: "title is required",
+		},
+		{
+			name: "Fail: invalid section",
+			task: &task.Task{ID: "task_1", Title: "Read", Section: "invalid_section", Type: "boolean"},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+			},
+			expectError: true,
+			errContains: "section must be one of",
+		},
+		{
+			name: "Fail: invalid type",
+			task: &task.Task{ID: "task_1", Title: "Read", Section: "dev", Type: "invalid_type"},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+			},
+			expectError: true,
+			errContains: "type must be one of",
 		},
 		{
 			name: "Fail: not found",
@@ -492,6 +517,39 @@ func TestTaskService_MigrateTask(t *testing.T) {
 				repo.On("Update", mock.Anything, mock.Anything).Return(nil)
 				repo.On("Create", mock.Anything, mock.Anything).Return(nil)
 			},
+		},
+		{
+			name: "Fail: aggregator error",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(0, errors.New("agg error"))
+			},
+			expectError: true,
+			errContains: "checking task progress",
+		},
+		{
+			name: "Fail: Update (archive old) fails",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
+				repo.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
+			},
+			expectError: true,
+			errContains: "archiving task for migration",
+		},
+		{
+			name: "Fail: Create (new task) fails",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
+				repo.On("Update", mock.Anything, mock.Anything).Return(nil)
+				repo.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
+			},
+			expectError: true,
+			errContains: "creating migrated task",
 		},
 	}
 

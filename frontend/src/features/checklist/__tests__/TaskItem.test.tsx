@@ -1,0 +1,47 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { TaskItem } from '../TaskItem';
+import { useAppStore } from '@/store/useAppStore';
+
+vi.mock('@/store/useAppStore', () => ({
+  useAppStore: vi.fn(),
+}));
+
+describe('TaskItem', () => {
+  const mockUpdateTaskProgressOptimistic = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useAppStore as any).mockReturnValue(mockUpdateTaskProgressOptimistic);
+  });
+
+  it('renders boolean task and toggles completion', () => {
+    const entry = { taskId: 't1', targetAmount: 1, actualAmount: 0, isCompleted: false };
+    render(<TaskItem entry={entry} title="Read Book" type="boolean" />);
+    
+    const btn = screen.getByRole('button');
+    fireEvent.click(btn);
+    expect(mockUpdateTaskProgressOptimistic).toHaveBeenCalledWith('t1', 1);
+  });
+
+  it('renders quantitative task and updates progress', () => {
+    const entry = { taskId: 't2', targetAmount: 10, actualAmount: 5, isCompleted: false };
+    render(<TaskItem entry={entry} title="Pages Read" type="quantitative" />);
+    
+    const buttons = screen.getAllByRole('button');
+    // buttons[0] is minus, buttons[1] is plus based on the layout
+    fireEvent.click(buttons[1]); // Plus
+    expect(mockUpdateTaskProgressOptimistic).toHaveBeenCalledWith('t2', 6);
+    
+    fireEvent.click(buttons[0]); // Minus
+    expect(mockUpdateTaskProgressOptimistic).toHaveBeenCalledWith('t2', 4);
+  });
+
+  it('disables plus button when actualAmount reaches targetAmount', () => {
+    const entry = { taskId: 't2', targetAmount: 10, actualAmount: 10, isCompleted: true };
+    render(<TaskItem entry={entry} title="Pages Read" type="quantitative" />);
+    
+    const buttons = screen.getAllByRole('button');
+    expect((buttons[1] as HTMLButtonElement).disabled).toBe(true); // Plus button
+  });
+});

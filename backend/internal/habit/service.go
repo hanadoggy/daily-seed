@@ -61,6 +61,9 @@ func (s *HabitServiceImpl) Update(ctx context.Context, habit *Habit) (*Habit, er
 	if strings.TrimSpace(habit.Title) == "" {
 		return nil, fmt.Errorf("title is required")
 	}
+	if strings.TrimSpace(habit.Category) == "" {
+		return nil, fmt.Errorf("category is required")
+	}
 
 	habit.Status = existing.Status
 

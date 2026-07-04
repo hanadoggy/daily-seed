@@ -44,4 +44,14 @@ func TestHabitRepository(t *testing.T) {
 		assert.Len(t, active, 1)
 		assert.Equal(t, "h1", active[0].ID)
 	})
+
+	t.Run("Context_Cancellation", func(t *testing.T) {
+		cancelCtx, cancelFunc := context.WithCancel(context.Background())
+		cancelFunc() // cancel immediately
+		err := repo.Create(cancelCtx, &habit.Habit{ID: "ctx_test"})
+		assert.ErrorIs(t, err, context.Canceled)
+		
+		_, err = repo.FindByID(cancelCtx, "h1")
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }

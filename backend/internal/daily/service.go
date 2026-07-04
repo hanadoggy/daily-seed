@@ -6,6 +6,7 @@ import (
 	"daily-seed/internal/task"
 	"fmt"
 	"log/slog"
+	"time"
 )
 
 type DailyServiceImpl struct {
@@ -26,9 +27,19 @@ func NewDailyService(
 	}
 }
 
+func validateDate(date string) error {
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		return fmt.Errorf("invalid date format, expected YYYY-MM-DD")
+	}
+	return nil
+}
+
 // GetDailyRecord retrieves the DailyRecord for the given date.
 // If no record exists, it generates one from the currently active tasks and habits.
 func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*DailyRecord, error) {
+	if err := validateDate(date); err != nil {
+		return nil, err
+	}
 	record, err := s.dailyRepo.FindByDate(ctx, date)
 	if err != nil {
 		return nil, fmt.Errorf("finding daily record: %w", err)
@@ -62,6 +73,9 @@ func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*Da
 // UpdateDailyRecord applies a partial update to the daily record, then returns
 // the full updated record.
 func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*DailyRecord, error) {
+	if err := validateDate(date); err != nil {
+		return nil, err
+	}
 	// Ensure the record exists first (generate if needed).
 	existing, err := s.GetDailyRecord(ctx, date)
 	if err != nil {

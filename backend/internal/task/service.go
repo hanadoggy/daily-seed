@@ -57,6 +57,9 @@ func validateTask(task *Task) error {
 	if task.Type == "quantitative" && task.Metrics.DailyTarget <= 0 {
 		return fmt.Errorf("dailyTarget must be positive for quantitative tasks")
 	}
+	if task.Metrics.TotalTarget < 0 {
+		return fmt.Errorf("totalTarget cannot be negative")
+	}
 	return nil
 }
 

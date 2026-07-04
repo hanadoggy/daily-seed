@@ -62,4 +62,14 @@ func TestTaskRepository(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, found)
 	})
+
+	t.Run("Context_Cancellation", func(t *testing.T) {
+		cancelCtx, cancelFunc := context.WithCancel(context.Background())
+		cancelFunc() // cancel immediately
+		err := repo.Create(cancelCtx, &task.Task{ID: "ctx_test"})
+		assert.ErrorIs(t, err, context.Canceled)
+		
+		_, err = repo.FindByID(cancelCtx, "t1")
+		assert.ErrorIs(t, err, context.Canceled)
+	})
 }

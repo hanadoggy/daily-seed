@@ -157,10 +157,24 @@ func TestHabitService_Update(t *testing.T) {
 			errContains: "title is required",
 		},
 		{
+			name: "Fail: empty category (edge)",
+			habit: &Habit{
+				ID:       "habit_1",
+				Title:    "Valid Title",
+				Category: "   ",
+			},
+			mockSetup: func(m *MockHabitRepository) {
+				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+			},
+			expectError: true,
+			errContains: "category is required",
+		},
+		{
 			name: "Fail: update repo error",
 			habit: &Habit{
-				ID:    "habit_1",
-				Title: "Walk 2",
+				ID:       "habit_1",
+				Title:    "Walk 2",
+				Category: "Health",
 			},
 			mockSetup: func(m *MockHabitRepository) {
 				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
