@@ -8,6 +8,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { todayJST } from '@/lib/dayjs';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ThemeSwitcher } from '@/components/theme-switcher';
 
 const MODE_CLASS_MAP = {
   Growth: 'mode-growth',
@@ -49,7 +50,8 @@ function App() {
               <Leaf className="h-5 w-5 text-mode-accent" />
             </div>
             <h1 className="text-xl font-bold tracking-tight">Daily Seed</h1>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <ThemeSwitcher />
               <Button
                 id="manage-button"
                 variant="outline"
