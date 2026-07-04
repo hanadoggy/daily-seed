@@ -84,7 +84,7 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should rollback on API failure', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Failed'));
 
-    await useAppStore.getState().updateContextMode('Work');
+    await useAppStore.getState().updateContextMode('Office');
 
     // Due to await, the try-catch in updateContextMode already finished rolling back.
     expect(useAppStore.getState().currentMode).toBe('Growth');
@@ -94,9 +94,27 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should persist on API success', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({} as DailyRecord);
 
-    await useAppStore.getState().updateContextMode('Work');
+    await useAppStore.getState().updateContextMode('Office');
 
-    expect(useAppStore.getState().currentMode).toBe('Work');
-    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('Work');
+    expect(useAppStore.getState().currentMode).toBe('Office');
+    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('Office');
+  });
+
+  it('updateWeather should rollback on API failure', async () => {
+    vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Failed'));
+
+    await useAppStore.getState().updateWeather('rainy');
+
+    expect(useAppStore.getState().currentWeather).toBe('sunny');
+    expect(useAppStore.getState().dailyRecord?.context.weather).toBe('sunny');
+  });
+
+  it('updateWeather should persist on API success', async () => {
+    vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({} as DailyRecord);
+
+    await useAppStore.getState().updateWeather('rainy');
+
+    expect(useAppStore.getState().currentWeather).toBe('rainy');
+    expect(useAppStore.getState().dailyRecord?.context.weather).toBe('rainy');
   });
 });

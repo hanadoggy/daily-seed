@@ -3,11 +3,13 @@ import type { ContextMode, DailyRecord, Journal, Task, Habit, TaskProgress } fro
 export interface DailySlice {
   selectedDate: string;
   currentMode: ContextMode;
+  currentWeather: string;
   dailyRecord: DailyRecord | null;
   isLoading: boolean;
   error: string | null;
   setDateAndFetch: (date: string) => Promise<void>;
   updateContextMode: (mode: ContextMode) => Promise<void>;
+  updateWeather: (weather: string) => Promise<void>;
   saveJournal: (journalData: Journal) => Promise<void>;
   toggleHabitOptimistic: (habitId: string, isCompleted: boolean) => void;
   updateTaskProgressOptimistic: (taskId: string, amount: number) => void;

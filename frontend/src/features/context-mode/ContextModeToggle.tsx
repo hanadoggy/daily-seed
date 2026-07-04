@@ -1,4 +1,4 @@
-import { Sprout, Coffee, Briefcase } from 'lucide-react';
+import { Sprout, Coffee, Building, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
 import type { ContextMode } from '@/types';
@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils';
 const MODES: { value: ContextMode; label: string; icon: typeof Sprout; color: string }[] = [
   { value: 'Growth', label: 'Growth', icon: Sprout, color: 'text-emerald-400' },
   { value: 'Rest', label: 'Rest', icon: Coffee, color: 'text-amber-400' },
-  { value: 'Work', label: 'Work', icon: Briefcase, color: 'text-blue-400' },
+  { value: 'Office', label: 'Office', icon: Building, color: 'text-blue-400' },
+  { value: 'Remote', label: 'Remote', icon: Home, color: 'text-purple-400' },
 ];
 
 export function ContextModeToggle() {

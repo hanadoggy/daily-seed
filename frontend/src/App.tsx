@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { Leaf, Settings } from 'lucide-react';
 import { Calendar } from '@/features/calendar/Calendar';
 import { ContextModeToggle } from '@/features/context-mode/ContextModeToggle';
+import { WeatherSelector } from '@/features/context-mode/WeatherSelector';
 import { DailyChecklist } from '@/features/checklist/DailyChecklist';
 import { JournalSection } from '@/features/journal/JournalSection';
 import { ProgressTracker } from '@/features/progress/ProgressTracker';
+import { AutoMigrationPrompt } from '@/features/progress/AutoMigrationPrompt';
 import { ManagePanel } from '@/features/manage/ManagePanel';
 import { useAppStore } from '@/store/useAppStore';
 import { todayJST } from '@/lib/dayjs';
@@ -15,7 +17,8 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 const MODE_CLASS_MAP = {
   Growth: 'mode-growth',
   Rest: 'mode-rest',
-  Work: 'mode-work',
+  Office: 'mode-work',
+  Remote: 'mode-work',
 } as const;
 
 function App() {
@@ -90,11 +93,19 @@ function App() {
 
           {/* Content */}
           <main className="space-y-6">
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Today's Mode
-              </h2>
-              <ContextModeToggle />
+            <section className="flex gap-4">
+              <div className="flex-1">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Today's Mode
+                </h2>
+                <ContextModeToggle />
+              </div>
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                  Weather
+                </h2>
+                <WeatherSelector />
+              </div>
             </section>
 
             <section>
@@ -110,6 +121,7 @@ function App() {
 
       {/* Management Panel */}
       {showManage && <ManagePanel onClose={() => setShowManage(false)} />}
+      <AutoMigrationPrompt />
     </div>
   );
 }

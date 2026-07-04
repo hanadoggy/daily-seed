@@ -1,4 +1,4 @@
-export type ContextMode = 'Growth' | 'Rest' | 'Work';
+export type ContextMode = 'Growth' | 'Rest' | 'Office' | 'Remote';
 
 export interface TaskMetrics {
   dailyTarget: number;
@@ -19,7 +19,7 @@ export interface MigrationResult {
 }
 
 export interface TaskConditions {
-  weather: string;
+  weather: 'sunny' | 'rainy' | 'any';
   mode: string;
 }
 

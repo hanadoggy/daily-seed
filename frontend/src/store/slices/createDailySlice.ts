@@ -6,6 +6,7 @@ import type { ContextMode, Journal, HabitEntry, TaskEntry } from '../../types';
 export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set, get) => ({
   selectedDate: '',
   currentMode: 'Growth',
+  currentWeather: 'sunny',
   dailyRecord: null,
   isLoading: false,
   error: null,
@@ -17,6 +18,7 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       set({
         dailyRecord: record,
         currentMode: record.context.mode as ContextMode,
+        currentWeather: record.context.weather || 'sunny',
         isLoading: false,
       });
     } catch (err) {
@@ -46,6 +48,30 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       });
     } catch {
       set({ currentMode: previousMode, dailyRecord: previousRecord });
+    }
+  },
+
+  updateWeather: async (weather: string) => {
+    const { dailyRecord, selectedDate } = get();
+    if (!dailyRecord) return;
+
+    const previousWeather = get().currentWeather;
+    const previousRecord = dailyRecord;
+
+    set({
+      currentWeather: weather,
+      dailyRecord: {
+        ...dailyRecord,
+        context: { ...dailyRecord.context, weather },
+      },
+    });
+
+    try {
+      await patchDailyRecord(selectedDate, {
+        context: { ...dailyRecord.context, weather },
+      });
+    } catch {
+      set({ currentWeather: previousWeather, dailyRecord: previousRecord });
     }
   },
 

@@ -131,7 +131,7 @@ func (s *DailyServiceImpl) generateDailyRecord(ctx context.Context, date string)
 		Date: date,
 		Context: DayContext{
 			Mode:    "Growth",
-			Weather: "",
+			Weather: "sunny",
 		},
 		Tasks:  taskEntries,
 		Habits: habitEntries,
