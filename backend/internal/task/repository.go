@@ -22,7 +22,7 @@ func (r *MongoTaskRepo) FindActiveTasks(ctx context.Context) ([]Task, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var tasks []Task
+	tasks := make([]Task, 0)
 	if err := cursor.All(ctx, &tasks); err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (r *MongoTaskRepo) FindAll(ctx context.Context) ([]Task, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var tasks []Task
+	tasks := make([]Task, 0)
 	if err := cursor.All(ctx, &tasks); err != nil {
 		return nil, err
 	}

@@ -22,7 +22,7 @@ func (r *MongoHabitRepo) FindActiveHabits(ctx context.Context) ([]Habit, error) 
 	}
 	defer cursor.Close(ctx)
 
-	var habits []Habit
+	habits := make([]Habit, 0)
 	if err := cursor.All(ctx, &habits); err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (r *MongoHabitRepo) FindAll(ctx context.Context) ([]Habit, error) {
 	}
 	defer cursor.Close(ctx)
 
-	var habits []Habit
+	habits := make([]Habit, 0)
 	if err := cursor.All(ctx, &habits); err != nil {
 		return nil, err
 	}
