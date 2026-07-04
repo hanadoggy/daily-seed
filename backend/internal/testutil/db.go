@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -51,8 +52,11 @@ func RunWithDB(m *testing.M) {
 
 func ClearDB(ctx context.Context) {
 	if DB != nil {
-		_ = DB.Collection("tasks").Drop(ctx)
-		_ = DB.Collection("habits").Drop(ctx)
-		_ = DB.Collection("dailyRecords").Drop(ctx)
+		collections, err := DB.ListCollectionNames(ctx, bson.M{})
+		if err == nil {
+			for _, coll := range collections {
+				_ = DB.Collection(coll).Drop(ctx)
+			}
+		}
 	}
 }

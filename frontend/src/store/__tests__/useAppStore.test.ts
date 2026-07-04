@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAppStore } from '../useAppStore';
 import * as apiClient from '../../api/client';
-import { DailyRecord } from '../../types';
+import type { DailyRecord } from '../../types';
 
 // Mock the API client
 vi.mock('../../api/client', () => ({
@@ -84,7 +84,7 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should rollback on API failure', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Failed'));
 
-    await useAppStore.getState().updateContextMode('British Green');
+    await useAppStore.getState().updateContextMode('Focus');
 
     // Due to await, the try-catch in updateContextMode already finished rolling back.
     expect(useAppStore.getState().currentMode).toBe('Growth');
@@ -94,9 +94,9 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should persist on API success', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({} as DailyRecord);
 
-    await useAppStore.getState().updateContextMode('British Green');
+    await useAppStore.getState().updateContextMode('Focus');
 
-    expect(useAppStore.getState().currentMode).toBe('British Green');
-    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('British Green');
+    expect(useAppStore.getState().currentMode).toBe('Focus');
+    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('Focus');
   });
 });
