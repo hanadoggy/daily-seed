@@ -4,10 +4,13 @@ import {
   createTask as apiCreateTask,
   updateTask as apiUpdateTask,
   deleteTask as apiDeleteTask,
+  fetchTaskProgress as apiFetchProgress,
+  migrateTask as apiMigrateTask,
 } from '../../api/client';
 
 export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, get) => ({
   tasks: [],
+  taskProgress: [],
 
   addTask: async (task) => {
     try {
@@ -40,6 +43,32 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       await apiDeleteTask(id);
     } catch {
       set({ tasks: previous });
+    }
+  },
+
+  migrateTask: async (id) => {
+    try {
+      const result = await apiMigrateTask(id);
+      set((state) => ({
+        tasks: state.tasks
+          .filter((t) => t.id !== result.archivedTask.id)
+          .concat(result.newTask),
+      }));
+      // Refresh progress after migration.
+      get().fetchProgress();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to migrate task';
+      set({ error: message });
+    }
+  },
+
+  fetchProgress: async () => {
+    try {
+      const progress = await apiFetchProgress();
+      set({ taskProgress: progress });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch progress';
+      set({ error: message });
     }
   },
 });

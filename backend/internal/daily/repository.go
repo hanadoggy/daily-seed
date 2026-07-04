@@ -12,7 +12,7 @@ type MongoDailyRecordRepo struct {
 	col *mongo.Collection
 }
 
-func NewDailyRecordRepository(db *mongo.Database) DailyRecordRepository {
+func NewDailyRecordRepository(db *mongo.Database) *MongoDailyRecordRepo {
 	return &MongoDailyRecordRepo{col: db.Collection("dailyRecords")}
 }
 
@@ -50,3 +50,35 @@ func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, set
 	}
 	return nil
 }
+
+// SumTaskProgress aggregates the total actualAmount for a given taskId across
+// all daily records. This satisfies the task.TaskProgressAggregator interface.
+func (r *MongoDailyRecordRepo) SumTaskProgress(ctx context.Context, taskID string) (int, error) {
+	pipeline := mongo.Pipeline{
+		{{Key: "$unwind", Value: "$tasks"}},
+		{{Key: "$match", Value: bson.M{"tasks.taskId": taskID}}},
+		{{Key: "$group", Value: bson.M{
+			"_id":   nil,
+			"total": bson.M{"$sum": "$tasks.actualAmount"},
+		}}},
+	}
+
+	cursor, err := r.col.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, err
+	}
+	defer cursor.Close(ctx)
+
+	var results []struct {
+		Total int `bson:"total"`
+	}
+	if err := cursor.All(ctx, &results); err != nil {
+		return 0, err
+	}
+
+	if len(results) == 0 {
+		return 0, nil
+	}
+	return results[0].Total, nil
+}
+

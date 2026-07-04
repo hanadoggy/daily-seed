@@ -5,6 +5,19 @@ export interface TaskMetrics {
   totalTarget: number;
 }
 
+export interface TaskProgress {
+  taskId: string;
+  title: string;
+  totalTarget: number;
+  totalCompleted: number;
+  percentage: number;
+}
+
+export interface MigrationResult {
+  archivedTask: Task;
+  newTask: Task;
+}
+
 export interface TaskConditions {
   weather: string;
   mode: string;

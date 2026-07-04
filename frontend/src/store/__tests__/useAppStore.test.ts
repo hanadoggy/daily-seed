@@ -84,7 +84,7 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should rollback on API failure', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Failed'));
 
-    await useAppStore.getState().updateContextMode('Focus');
+    await useAppStore.getState().updateContextMode('Work');
 
     // Due to await, the try-catch in updateContextMode already finished rolling back.
     expect(useAppStore.getState().currentMode).toBe('Growth');
@@ -94,9 +94,9 @@ describe('useAppStore Optimistic Updates', () => {
   it('updateContextMode should persist on API success', async () => {
     vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({} as DailyRecord);
 
-    await useAppStore.getState().updateContextMode('Focus');
+    await useAppStore.getState().updateContextMode('Work');
 
-    expect(useAppStore.getState().currentMode).toBe('Focus');
-    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('Focus');
+    expect(useAppStore.getState().currentMode).toBe('Work');
+    expect(useAppStore.getState().dailyRecord?.context.mode).toBe('Work');
   });
 });

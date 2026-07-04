@@ -53,7 +53,7 @@ func main() {
 	dailyRecordRepo := daily.NewDailyRecordRepository(db)
 
 	dailySvc := daily.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
-	taskSvc := task.NewTaskService(taskRepo)
+	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo)
 	habitSvc := habit.NewHabitService(habitRepo)
 
 	dailyHandler := daily.NewDailyHandler(dailySvc)

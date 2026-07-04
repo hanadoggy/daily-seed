@@ -10,11 +10,12 @@ import (
 )
 
 type TaskServiceImpl struct {
-	repo TaskRepository
+	repo       TaskRepository
+	aggregator TaskProgressAggregator
 }
 
-func NewTaskService(repo TaskRepository) TaskService {
-	return &TaskServiceImpl{repo: repo}
+func NewTaskService(repo TaskRepository, aggregator TaskProgressAggregator) TaskService {
+	return &TaskServiceImpl{repo: repo, aggregator: aggregator}
 }
 
 func (s *TaskServiceImpl) List(ctx context.Context) ([]Task, error) {
@@ -120,4 +121,92 @@ func (s *TaskServiceImpl) Archive(ctx context.Context, id string) error {
 		return fmt.Errorf("archiving task: %w", err)
 	}
 	return nil
+}
+
+func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]TaskProgress, error) {
+	tasks, err := s.repo.FindActiveTasks(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetching active tasks: %w", err)
+	}
+
+	progress := make([]TaskProgress, 0, len(tasks))
+	for _, t := range tasks {
+		// Skip boolean tasks — they don't have meaningful cumulative progress.
+		if t.Type != "quantitative" || t.Metrics.TotalTarget <= 0 {
+			continue
+		}
+
+		completed, err := s.aggregator.SumTaskProgress(ctx, t.ID)
+		if err != nil {
+			return nil, fmt.Errorf("summing progress for task %s: %w", t.ID, err)
+		}
+
+		pct := 0.0
+		if t.Metrics.TotalTarget > 0 {
+			pct = float64(completed) / float64(t.Metrics.TotalTarget) * 100
+		}
+
+		progress = append(progress, TaskProgress{
+			TaskID:         t.ID,
+			Title:          t.Title,
+			TotalTarget:    t.Metrics.TotalTarget,
+			TotalCompleted: completed,
+			Percentage:     pct,
+		})
+	}
+
+	return progress, nil
+}
+
+func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*MigrationResult, error) {
+	existing, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("finding task: %w", err)
+	}
+	if existing == nil {
+		return nil, fmt.Errorf("task not found: %s", id)
+	}
+	if existing.Status != "active" {
+		return nil, fmt.Errorf("cannot migrate non-active task: %s", id)
+	}
+
+	// Verify cumulative progress meets or exceeds totalTarget.
+	if existing.Metrics.TotalTarget > 0 {
+		completed, err := s.aggregator.SumTaskProgress(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("checking task progress: %w", err)
+		}
+		if completed < existing.Metrics.TotalTarget {
+			return nil, fmt.Errorf("task progress (%d/%d) has not reached the target", completed, existing.Metrics.TotalTarget)
+		}
+	}
+
+	// Archive the old task.
+	existing.Status = "archived"
+	if err := s.repo.Update(ctx, existing); err != nil {
+		return nil, fmt.Errorf("archiving task for migration: %w", err)
+	}
+
+	// Create new task with the same configuration but reset progress.
+	newTask := &Task{
+		ID:      fmt.Sprintf("task_%d", time.Now().In(jst.Location()).UnixMilli()),
+		Section: existing.Section,
+		Title:   existing.Title,
+		Type:    existing.Type,
+		Metrics: TaskMetrics{
+			DailyTarget: existing.Metrics.DailyTarget,
+			TotalTarget: existing.Metrics.TotalTarget,
+		},
+		Conditions: existing.Conditions,
+		Status:     "active",
+	}
+
+	if err := s.repo.Create(ctx, newTask); err != nil {
+		return nil, fmt.Errorf("creating migrated task: %w", err)
+	}
+
+	return &MigrationResult{
+		ArchivedTask: *existing,
+		NewTask:      *newTask,
+	}, nil
 }

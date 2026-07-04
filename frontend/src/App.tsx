@@ -3,6 +3,8 @@ import { Leaf, Settings } from 'lucide-react';
 import { Calendar } from '@/features/calendar/Calendar';
 import { ContextModeToggle } from '@/features/context-mode/ContextModeToggle';
 import { DailyChecklist } from '@/features/checklist/DailyChecklist';
+import { JournalSection } from '@/features/journal/JournalSection';
+import { ProgressTracker } from '@/features/progress/ProgressTracker';
 import { ManagePanel } from '@/features/manage/ManagePanel';
 import { useAppStore } from '@/store/useAppStore';
 import { todayJST } from '@/lib/dayjs';
@@ -83,6 +85,7 @@ function App() {
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <Calendar />
             </div>
+            <ProgressTracker />
           </aside>
 
           {/* Content */}
@@ -96,6 +99,10 @@ function App() {
 
             <section>
               <DailyChecklist tasks={tasks} habits={habits} />
+            </section>
+
+            <section>
+              <JournalSection />
             </section>
           </main>
         </div>

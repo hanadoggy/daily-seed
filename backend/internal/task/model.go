@@ -15,7 +15,27 @@ type Task struct {
 
 type TaskMetrics struct {
 	DailyTarget int `json:"dailyTarget" bson:"dailyTarget"` // e.g. 10 (pages), 1 (boolean)
-	WeeklyGoal  int `json:"weeklyGoal" bson:"weeklyGoal"`   // optional
+	TotalTarget int `json:"totalTarget" bson:"totalTarget"`  // lifetime goal (0 = no limit)
+}
+
+type TaskConditions struct {
+	Weather string `json:"weather" bson:"weather"` // "any" | "sunny" | "rainy" etc.
+	Mode    string `json:"mode" bson:"mode"`       // "any" | "Growth" | "Rest" | "Work"
+}
+
+// TaskProgress represents a task's cumulative progress across all daily records.
+type TaskProgress struct {
+	TaskID         string  `json:"taskId"`
+	Title          string  `json:"title"`
+	TotalTarget    int     `json:"totalTarget"`
+	TotalCompleted int     `json:"totalCompleted"`
+	Percentage     float64 `json:"percentage"`
+}
+
+// MigrationResult is the response from a task migration operation.
+type MigrationResult struct {
+	ArchivedTask Task `json:"archivedTask"`
+	NewTask      Task `json:"newTask"`
 }
 
 type TaskService interface {
@@ -24,6 +44,8 @@ type TaskService interface {
 	Create(ctx context.Context, task *Task) (*Task, error)
 	Update(ctx context.Context, task *Task) (*Task, error)
 	Archive(ctx context.Context, id string) error
+	GetProgressForActiveTasks(ctx context.Context) ([]TaskProgress, error)
+	MigrateTask(ctx context.Context, id string) (*MigrationResult, error)
 }
 
 type TaskRepository interface {
@@ -35,7 +57,9 @@ type TaskRepository interface {
 	Delete(ctx context.Context, id string) error
 }
 
-type TaskConditions struct {
-	Weather string `json:"weather" bson:"weather"` // "any" | "sunny" | "rainy" etc.
-	Mode    string `json:"mode" bson:"mode"`       // "any" | "Growth" | "Rest" | "Work"
+// TaskProgressAggregator provides cumulative progress data from daily records.
+// Defined here to avoid circular imports with the daily package.
+type TaskProgressAggregator interface {
+	SumTaskProgress(ctx context.Context, taskID string) (int, error)
 }
+

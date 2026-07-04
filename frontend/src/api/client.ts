@@ -1,4 +1,4 @@
-import type { DailyRecord, Task, Habit } from '../types';
+import type { DailyRecord, Task, Habit, TaskProgress, MigrationResult } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
@@ -70,6 +70,14 @@ export function updateTask(id: string, task: Omit<Task, 'id' | 'status'>): Promi
 
 export function deleteTask(id: string): Promise<void> {
   return request(`/tasks/${id}`, { method: 'DELETE' });
+}
+
+export function fetchTaskProgress(): Promise<TaskProgress[]> {
+  return request<TaskProgress[]>('/tasks/progress');
+}
+
+export function migrateTask(id: string): Promise<MigrationResult> {
+  return request<MigrationResult>(`/tasks/${id}/migrate`, { method: 'POST' });
 }
 
 // --- Habits ---

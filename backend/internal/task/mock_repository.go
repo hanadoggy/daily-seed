@@ -48,3 +48,13 @@ func (m *MockTaskRepository) Delete(ctx context.Context, id string) error {
 	args := m.Called(ctx, id)
 	return args.Error(0)
 }
+
+type MockTaskProgressAggregator struct {
+	mock.Mock
+}
+
+func (m *MockTaskProgressAggregator) SumTaskProgress(ctx context.Context, taskID string) (int, error) {
+	args := m.Called(ctx, taskID)
+	return args.Int(0), args.Error(1)
+}
+

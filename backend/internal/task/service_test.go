@@ -79,7 +79,7 @@ func TestTaskService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo)
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
 
 			created, err := svc.Create(context.Background(), tt.task)
 			if tt.expectError {
@@ -162,7 +162,7 @@ func TestTaskService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo)
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
 
 			updated, err := svc.Update(context.Background(), tt.task)
 			if tt.expectError {
@@ -235,7 +235,7 @@ func TestTaskService_Archive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo)
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
 
 			err := svc.Archive(context.Background(), tt.id)
 			if tt.expectError {
@@ -293,7 +293,7 @@ func TestTaskService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo)
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
 
 			res, err := svc.Get(context.Background(), tt.id)
 			if tt.expectError {
@@ -337,7 +337,7 @@ func TestTaskService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo)
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
 
 			res, err := svc.List(context.Background())
 			if tt.expectError {
@@ -351,3 +351,174 @@ func TestTaskService_List(t *testing.T) {
 		})
 	}
 }
+
+func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
+	tests := []struct {
+		name            string
+		mockSetup       func(*task.MockTaskRepository, *task.MockTaskProgressAggregator)
+		expectError     bool
+		expectedResults int
+	}{
+		{
+			name: "Pass: returns progress for quantitative tasks with totalTarget",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
+					{ID: "task_1", Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+					{ID: "task_2", Title: "Read News", Type: "boolean", Metrics: task.TaskMetrics{DailyTarget: 1}},
+					{ID: "task_3", Title: "LeetCode", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
+				}, nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(250, nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_3").Return(50, nil)
+			},
+			expectedResults: 2,
+		},
+		{
+			name: "Pass: skips quantitative tasks with zero totalTarget",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
+					{ID: "task_1", Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 0}},
+				}, nil)
+			},
+			expectedResults: 0,
+		},
+		{
+			name: "Fail: repo error",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindActiveTasks", mock.Anything).Return(nil, errors.New("db error"))
+			},
+			expectError: true,
+		},
+		{
+			name: "Fail: aggregator error",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
+					{ID: "task_1", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+				}, nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(0, errors.New("agg error"))
+			},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := new(task.MockTaskRepository)
+			agg := new(task.MockTaskProgressAggregator)
+			tt.mockSetup(repo, agg)
+			svc := task.NewTaskService(repo, agg)
+
+			progress, err := svc.GetProgressForActiveTasks(context.Background())
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, progress)
+			} else {
+				assert.NoError(t, err)
+				assert.Len(t, progress, tt.expectedResults)
+			}
+			repo.AssertExpectations(t)
+			agg.AssertExpectations(t)
+		})
+	}
+}
+
+func TestTaskService_MigrateTask(t *testing.T) {
+	newActiveTask := func() *task.Task {
+		return &task.Task{
+			ID:         "task_1",
+			Section:    "dev",
+			Title:      "LeetCode",
+			Type:       "quantitative",
+			Status:     "active",
+			Metrics:    task.TaskMetrics{DailyTarget: 3, TotalTarget: 100},
+			Conditions: task.TaskConditions{Weather: "any", Mode: "any"},
+		}
+	}
+
+	tests := []struct {
+		name        string
+		id          string
+		mockSetup   func(*task.MockTaskRepository, *task.MockTaskProgressAggregator)
+		expectError bool
+		errContains string
+	}{
+		{
+			name: "Pass: successful migration",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
+				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *task.Task) bool {
+					return t.ID == "task_1" && t.Status == "archived"
+				})).Return(nil)
+				repo.On("Create", mock.Anything, mock.MatchedBy(func(t *task.Task) bool {
+					return t.Status == "active" && t.Title == "LeetCode" && t.Section == "dev"
+				})).Return(nil)
+			},
+		},
+		{
+			name: "Fail: task not found",
+			id:   "task_999",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_999").Return(nil, nil)
+			},
+			expectError: true,
+			errContains: "task not found",
+		},
+		{
+			name: "Fail: non-active task",
+			id:   "task_2",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_2").Return(&task.Task{ID: "task_2", Status: "archived"}, nil)
+			},
+			expectError: true,
+			errContains: "non-active",
+		},
+		{
+			name: "Fail: progress not reached",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(50, nil)
+			},
+			expectError: true,
+			errContains: "has not reached the target",
+		},
+		{
+			name: "Pass: allows overshooting (>100%)",
+			id:   "task_1",
+			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
+				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
+				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(150, nil)
+				repo.On("Update", mock.Anything, mock.Anything).Return(nil)
+				repo.On("Create", mock.Anything, mock.Anything).Return(nil)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := new(task.MockTaskRepository)
+			agg := new(task.MockTaskProgressAggregator)
+			tt.mockSetup(repo, agg)
+			svc := task.NewTaskService(repo, agg)
+
+			result, err := svc.MigrateTask(context.Background(), tt.id)
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Nil(t, result)
+				if tt.errContains != "" {
+					assert.True(t, strings.Contains(err.Error(), tt.errContains))
+				}
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, result)
+				assert.Equal(t, "archived", result.ArchivedTask.Status)
+				assert.Equal(t, "active", result.NewTask.Status)
+				assert.Equal(t, "LeetCode", result.NewTask.Title)
+			}
+			repo.AssertExpectations(t)
+			agg.AssertExpectations(t)
+		})
+	}
+}
+

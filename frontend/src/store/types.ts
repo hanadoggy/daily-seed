@@ -1,4 +1,4 @@
-import type { ContextMode, DailyRecord, Journal, Task, Habit } from '../types';
+import type { ContextMode, DailyRecord, Journal, Task, Habit, TaskProgress } from '../types';
 
 export interface DailySlice {
   selectedDate: string;
@@ -15,9 +15,12 @@ export interface DailySlice {
 
 export interface TaskSlice {
   tasks: Task[];
+  taskProgress: TaskProgress[];
   addTask: (task: Omit<Task, 'id' | 'status'>) => Promise<void>;
   editTask: (id: string, task: Omit<Task, 'id' | 'status'>) => Promise<void>;
   archiveTask: (id: string) => Promise<void>;
+  migrateTask: (id: string) => Promise<void>;
+  fetchProgress: () => Promise<void>;
 }
 
 export interface HabitSlice {
