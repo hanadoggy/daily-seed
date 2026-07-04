@@ -57,11 +57,12 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       const result = await apiMigrateTask(id);
       set((state) => ({
         tasks: state.tasks
-          .filter((t) => t.id !== result.archivedTask.id)
+          .map((t) => (t.id === result.archivedTask.id ? result.archivedTask : t))
           .concat(result.newTask),
       }));
       // Refresh progress after migration.
-      get().fetchProgress();
+      await get().fetchProgress();
+      await get().setDateAndFetch(get().selectedDate);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to migrate task';
       set({ error: message });

@@ -31,6 +31,7 @@ export function AutoMigrationPrompt() {
 
   const handleConfirm = async () => {
     if (targetTask) {
+      setDismissedTaskIds((prev) => new Set(prev).add(targetTask.id));
       await migrateTask(targetTask.id);
       setIsOpen(false);
       setTargetTask(null);
