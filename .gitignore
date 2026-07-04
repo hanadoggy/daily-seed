@@ -1,0 +1,40 @@
+# Monorepo Root .gitignore
+
+# Go
+/backend/bin/
+/backend/build/
+/backend/*.exe
+/backend/*.exe~
+/backend/*.dll
+/backend/*.so
+/backend/*.dylib
+/backend/*.test
+/backend/*.out
+/backend/vendor/
+
+# Node / Frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/build/
+/frontend/.npm/
+/frontend/.eslintcache
+/frontend/.stylelintcache
+
+# Vite
+/frontend/.vite/
+
+# MongoDB / DB Init
+/mongo-init/data/
+
+# IDE & OS Files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
