@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,10 +13,10 @@ import (
 var dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 type DailyHandler struct {
-	svc service.DailyService
+	svc model.DailyService
 }
 
-func NewDailyHandler(svc service.DailyService) *DailyHandler {
+func NewDailyHandler(svc model.DailyService) *DailyHandler {
 	return &DailyHandler{svc: svc}
 }
 

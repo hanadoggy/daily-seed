@@ -6,16 +6,15 @@ import (
 	"strings"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type HabitHandler struct {
-	svc service.HabitService
+	svc model.HabitService
 }
 
-func NewHabitHandler(svc service.HabitService) *HabitHandler {
+func NewHabitHandler(svc model.HabitService) *HabitHandler {
 	return &HabitHandler{svc: svc}
 }
 

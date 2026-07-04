@@ -7,23 +7,16 @@ import (
 	"time"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/repository"
 	"daily-seed/pkg/jst"
 )
 
-type TaskService interface {
-	List(ctx context.Context) ([]model.Task, error)
-	Get(ctx context.Context, id string) (*model.Task, error)
-	Create(ctx context.Context, task *model.Task) (*model.Task, error)
-	Update(ctx context.Context, task *model.Task) (*model.Task, error)
-	Archive(ctx context.Context, id string) error
-}
+
 
 type taskService struct {
-	repo repository.TaskRepository
+	repo model.TaskRepository
 }
 
-func NewTaskService(repo repository.TaskRepository) TaskService {
+func NewTaskService(repo model.TaskRepository) model.TaskService {
 	return &taskService{repo: repo}
 }
 

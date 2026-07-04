@@ -7,23 +7,16 @@ import (
 	"time"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/repository"
 	"daily-seed/pkg/jst"
 )
 
-type HabitService interface {
-	List(ctx context.Context) ([]model.Habit, error)
-	Get(ctx context.Context, id string) (*model.Habit, error)
-	Create(ctx context.Context, habit *model.Habit) (*model.Habit, error)
-	Update(ctx context.Context, habit *model.Habit) (*model.Habit, error)
-	Archive(ctx context.Context, id string) error
-}
+
 
 type habitService struct {
-	repo repository.HabitRepository
+	repo model.HabitRepository
 }
 
-func NewHabitService(repo repository.HabitRepository) HabitService {
+func NewHabitService(repo model.HabitRepository) model.HabitService {
 	return &habitService{repo: repo}
 }
 

@@ -10,17 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type DailyRecordRepository interface {
-	FindByDate(ctx context.Context, date string) (*model.DailyRecord, error)
-	Upsert(ctx context.Context, record *model.DailyRecord) error
-	PatchByDate(ctx context.Context, date string, setFields bson.M) error
-}
+
 
 type mongoDailyRecordRepo struct {
 	col *mongo.Collection
 }
 
-func NewDailyRecordRepository(db *mongo.Database) DailyRecordRepository {
+func NewDailyRecordRepository(db *mongo.Database) model.DailyRecordRepository {
 	return &mongoDailyRecordRepo{col: db.Collection("dailyRecords")}
 }
 

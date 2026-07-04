@@ -6,25 +6,21 @@ import (
 	"log/slog"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/repository"
 )
 
-type DailyService interface {
-	GetDailyRecord(ctx context.Context, date string) (*model.DailyRecord, error)
-	UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*model.DailyRecord, error)
-}
+
 
 type dailyService struct {
-	dailyRepo repository.DailyRecordRepository
-	taskRepo  repository.TaskRepository
-	habitRepo repository.HabitRepository
+	dailyRepo model.DailyRecordRepository
+	taskRepo  model.TaskRepository
+	habitRepo model.HabitRepository
 }
 
 func NewDailyService(
-	dailyRepo repository.DailyRecordRepository,
-	taskRepo repository.TaskRepository,
-	habitRepo repository.HabitRepository,
-) DailyService {
+	dailyRepo model.DailyRecordRepository,
+	taskRepo model.TaskRepository,
+	habitRepo model.HabitRepository,
+) model.DailyService {
 	return &dailyService{
 		dailyRepo: dailyRepo,
 		taskRepo:  taskRepo,

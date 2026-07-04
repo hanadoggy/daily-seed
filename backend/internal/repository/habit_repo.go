@@ -9,20 +9,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type HabitRepository interface {
-	FindActiveHabits(ctx context.Context) ([]model.Habit, error)
-	FindAll(ctx context.Context) ([]model.Habit, error)
-	FindByID(ctx context.Context, id string) (*model.Habit, error)
-	Create(ctx context.Context, habit *model.Habit) error
-	Update(ctx context.Context, habit *model.Habit) error
-	Delete(ctx context.Context, id string) error
-}
+
 
 type mongoHabitRepo struct {
 	col *mongo.Collection
 }
 
-func NewHabitRepository(db *mongo.Database) HabitRepository {
+func NewHabitRepository(db *mongo.Database) model.HabitRepository {
 	return &mongoHabitRepo{col: db.Collection("habits")}
 }
 

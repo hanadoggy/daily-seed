@@ -6,16 +6,15 @@ import (
 	"strings"
 
 	"daily-seed/internal/model"
-	"daily-seed/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type TaskHandler struct {
-	svc service.TaskService
+	svc model.TaskService
 }
 
-func NewTaskHandler(svc service.TaskService) *TaskHandler {
+func NewTaskHandler(svc model.TaskService) *TaskHandler {
 	return &TaskHandler{svc: svc}
 }
 

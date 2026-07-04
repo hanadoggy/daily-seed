@@ -1,5 +1,11 @@
 package model
 
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
+
 // DailyRecord represents a single day's transaction data.
 // The _id is a YYYY-MM-DD string in JST.
 type DailyRecord struct {
@@ -31,4 +37,15 @@ type HabitEntry struct {
 type Journal struct {
 	OneLineReview  string `json:"oneLineReview" bson:"oneLineReview"`
 	ThreeLineDiary string `json:"threeLineDiary" bson:"threeLineDiary"`
+}
+
+type DailyService interface {
+	GetDailyRecord(ctx context.Context, date string) (*DailyRecord, error)
+	UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*DailyRecord, error)
+}
+
+type DailyRecordRepository interface {
+	FindByDate(ctx context.Context, date string) (*DailyRecord, error)
+	Upsert(ctx context.Context, record *DailyRecord) error
+	PatchByDate(ctx context.Context, date string, setFields bson.M) error
 }
