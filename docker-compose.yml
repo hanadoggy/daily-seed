@@ -9,6 +9,21 @@ services:
     networks:
       - app-network
 
+  mongo-express:
+    image: mongo-express:latest
+    container_name: daily-seed-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=daily
+      - ME_CONFIG_BASICAUTH_PASSWORD=seed
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
   backend:
     build:
       context: ./backend
