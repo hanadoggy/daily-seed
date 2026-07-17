@@ -96,7 +96,10 @@ func (r *MongoTaskRepo) MigrateTaskAtomic(ctx context.Context, archivedTask *Tas
 	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
 		// Archive old task
 		filter := bson.M{"_id": archivedTask.ID}
-		update := bson.M{"$set": bson.M{"status": "archived"}}
+		update := bson.M{"$set": bson.M{
+			"status":  "archived",
+			"endDate": archivedTask.EndDate,
+		}}
 		if _, err := r.col.UpdateOne(sessCtx, filter, update); err != nil {
 			return nil, fmt.Errorf("archiving old task: %w", err)
 		}

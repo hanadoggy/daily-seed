@@ -34,7 +34,7 @@ func TestTaskService_Create(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful boolean task",
-			task: &task.Task{Title: "Learn Go", Section: "dev", Type: "boolean"},
+			task: &task.Task{Title: "Learn Go", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("Create", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
 			},
@@ -42,7 +42,7 @@ func TestTaskService_Create(t *testing.T) {
 		},
 		{
 			name: "Pass: successful quantitative task",
-			task: &task.Task{Title: "Read", Section: "self_dev", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10}},
+			task: &task.Task{Title: "Read", Section: "self_dev", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 10}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("Create", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
 			},
@@ -50,42 +50,42 @@ func TestTaskService_Create(t *testing.T) {
 		},
 		{
 			name: "Fail: missing title",
-			task: &task.Task{Title: "", Section: "dev", Type: "boolean"},
+			task: &task.Task{Title: "", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {},
 			expectError: true,
 			errContains: "title is required",
 		},
 		{
 			name: "Fail: invalid section",
-			task: &task.Task{Title: "Test", Section: "unknown", Type: "boolean"},
+			task: &task.Task{Title: "Test", Section: "unknown", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {},
 			expectError: true,
 			errContains: "section must be one of",
 		},
 		{
 			name: "Fail: invalid type",
-			task: &task.Task{Title: "Test", Section: "dev", Type: "unknown"},
+			task: &task.Task{Title: "Test", Section: "dev", Type: "unknown", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {},
 			expectError: true,
 			errContains: "type must be one of",
 		},
 		{
 			name: "Fail: zero target for quantitative",
-			task: &task.Task{Title: "Test", Section: "dev", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 0}},
+			task: &task.Task{Title: "Test", Section: "dev", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 0}},
 			mockSetup: func(m *task.MockTaskRepository) {},
 			expectError: true,
 			errContains: "dailyTarget must be positive",
 		},
 		{
 			name: "Fail: negative total target",
-			task: &task.Task{Title: "Test", Section: "dev", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 1, TotalTarget: -10}},
+			task: &task.Task{Title: "Test", Section: "dev", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 1, TotalTarget: -10}},
 			mockSetup: func(m *task.MockTaskRepository) {},
 			expectError: true,
 			errContains: "totalTarget cannot be negative",
 		},
 		{
 			name: "Fail: repo error",
-			task: &task.Task{Title: "Test", Section: "dev", Type: "boolean"},
+			task: &task.Task{Title: "Test", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
@@ -98,7 +98,7 @@ func TestTaskService_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator), nil)
 
 			created, err := svc.Create(context.Background(), tt.task)
 			if tt.expectError {
@@ -120,7 +120,7 @@ func TestTaskService_Create(t *testing.T) {
 }
 
 func TestTaskService_Update(t *testing.T) {
-	existing := &task.Task{ID: taskOID1, Status: "active"}
+	existing := &task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}
 
 	tests := []struct {
 		name        string
@@ -131,7 +131,7 @@ func TestTaskService_Update(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful update",
-			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
@@ -140,7 +140,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: validation error",
-			task: &task.Task{ID: taskOID1, Title: "", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
@@ -149,7 +149,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: invalid section",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "invalid_section", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "invalid_section", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
@@ -167,7 +167,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: not found",
-			task: &task.Task{ID: taskOID2, Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID2, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID2.Hex()).Return(nil, nil)
 			},
@@ -176,7 +176,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: find error",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(nil, errors.New("db error"))
 			},
@@ -185,7 +185,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: update error",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
@@ -199,7 +199,7 @@ func TestTaskService_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator), nil)
 
 			updated, err := svc.Update(context.Background(), tt.task)
 			if tt.expectError {
@@ -218,7 +218,7 @@ func TestTaskService_Update(t *testing.T) {
 }
 
 func TestTaskService_Archive(t *testing.T) {
-	existing := &task.Task{ID: taskOID1, Status: "active"}
+	existing := &task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}
 
 	tests := []struct {
 		name        string
@@ -272,7 +272,7 @@ func TestTaskService_Archive(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator), nil)
 
 			err := svc.Archive(context.Background(), tt.id)
 			if tt.expectError {
@@ -330,7 +330,7 @@ func TestTaskService_Get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator), nil)
 
 			res, err := svc.Get(context.Background(), tt.id)
 			if tt.expectError {
@@ -374,7 +374,7 @@ func TestTaskService_List(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			tt.mockSetup(repo)
-			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator))
+			svc := task.NewTaskService(repo, new(task.MockTaskProgressAggregator), nil)
 
 			res, err := svc.List(context.Background())
 			if tt.expectError {
@@ -400,9 +400,9 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			name: "Pass: returns progress for quantitative tasks with totalTarget",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
-					{ID: taskOID1, Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
-					{ID: taskOID2, Title: "Read News", Type: "boolean", Metrics: task.TaskMetrics{DailyTarget: 1}},
-					{ID: taskOID3, Title: "LeetCode", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
+					{ID: taskOID1, Title: "Kanji", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+					{ID: taskOID2, Title: "Read News", Type: "boolean", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 1}},
+					{ID: taskOID3, Title: "LeetCode", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
 				}, nil)
 				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1, taskOID3}).Return(map[primitive.ObjectID]int{
 					taskOID1: 250,
@@ -431,7 +431,7 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			name: "Fail: aggregator error",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
-					{ID: taskOID1, Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+					{ID: taskOID1, Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
 				}, nil)
 				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return((map[primitive.ObjectID]int)(nil), errors.New("agg error"))
 			},
@@ -444,7 +444,7 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			agg := new(task.MockTaskProgressAggregator)
 			tt.mockSetup(repo, agg)
-			svc := task.NewTaskService(repo, agg)
+			svc := task.NewTaskService(repo, agg, nil)
 
 			progress, err := svc.GetProgressForActiveTasks(context.Background())
 			if tt.expectError {
@@ -558,9 +558,9 @@ func TestTaskService_MigrateTask(t *testing.T) {
 			repo := new(task.MockTaskRepository)
 			agg := new(task.MockTaskProgressAggregator)
 			tt.mockSetup(repo, agg)
-			svc := task.NewTaskService(repo, agg)
+			svc := task.NewTaskService(repo, agg, nil)
 
-			result, err := svc.MigrateTask(context.Background(), tt.id)
+			result, err := svc.MigrateTask(context.Background(), tt.id, task.MigrateTaskRequest{CompletionDate: "2026-07-17"})
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, result)

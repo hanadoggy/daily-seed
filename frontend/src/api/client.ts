@@ -76,8 +76,11 @@ export function fetchTaskProgress(): Promise<TaskProgress[]> {
   return request<TaskProgress[]>('/tasks/progress');
 }
 
-export function migrateTask(id: string): Promise<MigrationResult> {
-  return request<MigrationResult>(`/tasks/${id}/migrate`, { method: 'POST' });
+export function migrateTask(id: string, completionDate: string): Promise<MigrationResult> {
+  return request<MigrationResult>(`/tasks/${id}/migrate`, {
+    method: 'POST',
+    body: JSON.stringify({ completionDate }),
+  });
 }
 
 // --- Habits ---

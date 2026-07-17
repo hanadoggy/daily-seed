@@ -53,7 +53,7 @@ func main() {
 	dailyRecordRepo := daily.NewDailyRecordRepository(db)
 
 	dailySvc := daily.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
-	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo)
+	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo, dailyRecordRepo)
 	habitSvc := habit.NewHabitService(habitRepo)
 
 	// Ensure Indexes

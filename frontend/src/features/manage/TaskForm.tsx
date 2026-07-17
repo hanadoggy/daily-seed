@@ -20,7 +20,7 @@ interface TaskFormProps {
 }
 
 export function TaskForm({ task, onClose }: TaskFormProps) {
-  const { addTask, editTask } = useAppStore();
+  const { addTask, editTask, selectedDate } = useAppStore();
   const [title, setTitle] = useState(task?.title ?? '');
   const [section, setSection] = useState<string>(task?.section ?? 'japanese');
   const [type, setType] = useState<string>(task?.type ?? 'quantitative');
@@ -28,6 +28,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [totalTarget, setTotalTarget] = useState(task?.metrics.totalTarget ?? 0);
   const [weather, setWeather] = useState<Task['conditions']['weather']>(task?.conditions.weather ?? 'any');
   const [mode, setMode] = useState<string>(task?.conditions.mode ?? 'any');
+  const [startDate, setStartDate] = useState<string>(task?.startDate ?? selectedDate);
   const [submitting, setSubmitting] = useState(false);
 
   const isEditing = !!task;
@@ -37,6 +38,13 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
     if (!title.trim()) return;
 
     setSubmitting(true);
+    if (isEditing && task?.startDate && startDate > task.startDate) {
+      if (!window.confirm('시작일을 늦출 경우 이전 날짜의 체크리스트 기록이 모두 삭제됩니다. 정말 변경하시겠습니까?')) {
+        setSubmitting(false);
+        return;
+      }
+    }
+
     const payload = {
       title: title.trim(),
       section: section as Task['section'],
@@ -49,6 +57,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         weather,
         mode,
       },
+      startDate,
     };
 
     if (isEditing) {
@@ -74,6 +83,20 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Memorize Kanji"
+          required
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent focus:ring-1 focus:ring-mode-accent/40"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="task-start-date" className="text-xs font-medium text-muted-foreground">
+          Start Date
+        </label>
+        <input
+          id="task-start-date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           required
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent focus:ring-1 focus:ring-mode-accent/40"
         />

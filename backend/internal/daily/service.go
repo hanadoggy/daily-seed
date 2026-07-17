@@ -144,6 +144,9 @@ func (s *DailyServiceImpl) generateDailyRecord(ctx context.Context, date string)
 
 	taskEntries := make([]TaskEntry, 0, len(tasks))
 	for _, t := range tasks {
+		if t.StartDate > date {
+			continue
+		}
 		taskEntries = append(taskEntries, TaskEntry{
 			TaskID:       t.ID,
 			TargetAmount: t.Metrics.DailyTarget,
@@ -188,6 +191,9 @@ func (s *DailyServiceImpl) appendMissingEntries(ctx context.Context, record *Dai
 		existingTasks[t.TaskID] = true
 	}
 	for _, t := range tasks {
+		if t.StartDate > record.Date {
+			continue
+		}
 		if !existingTasks[t.ID] {
 			record.Tasks = append(record.Tasks, TaskEntry{
 				TaskID:       t.ID,

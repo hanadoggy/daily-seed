@@ -167,7 +167,16 @@ func (h *TaskHandler) GetProgress(c *gin.Context) {
 func (h *TaskHandler) Migrate(c *gin.Context) {
 	id := c.Param("id")
 
-	result, err := h.svc.MigrateTask(c.Request.Context(), id)
+	var req MigrateTaskRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "INVALID_BODY",
+			Message: "Request body must be valid JSON",
+		})
+		return
+	}
+
+	result, err := h.svc.MigrateTask(c.Request.Context(), id, req)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			c.JSON(http.StatusNotFound, common.ErrorResponse{
@@ -176,7 +185,7 @@ func (h *TaskHandler) Migrate(c *gin.Context) {
 			})
 			return
 		}
-		if strings.Contains(err.Error(), "has not reached") || strings.Contains(err.Error(), "non-active") {
+		if strings.Contains(err.Error(), "has not reached") || strings.Contains(err.Error(), "non-active") || strings.Contains(err.Error(), "completionDate") {
 			c.JSON(http.StatusBadRequest, common.ErrorResponse{
 				Code:    "MIGRATION_NOT_ALLOWED",
 				Message: err.Error(),

@@ -17,6 +17,7 @@ describe('TaskForm', () => {
     (useAppStore as any).mockReturnValue({
       addTask: mockAddTask,
       editTask: mockEditTask,
+      selectedDate: '2026-07-17',
     });
   });
 

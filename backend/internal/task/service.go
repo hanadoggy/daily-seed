@@ -4,17 +4,23 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type DailyCleaner interface {
+	RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID primitive.ObjectID, date string) error
+}
+
 type TaskServiceImpl struct {
 	repo       TaskRepository
 	aggregator TaskProgressAggregator
+	cleaner    DailyCleaner
 }
 
-func NewTaskService(repo TaskRepository, aggregator TaskProgressAggregator) TaskService {
-	return &TaskServiceImpl{repo: repo, aggregator: aggregator}
+func NewTaskService(repo TaskRepository, aggregator TaskProgressAggregator, cleaner DailyCleaner) TaskService {
+	return &TaskServiceImpl{repo: repo, aggregator: aggregator, cleaner: cleaner}
 }
 
 func (s *TaskServiceImpl) List(ctx context.Context) ([]Task, error) {
@@ -58,6 +64,9 @@ func validateTask(task *Task) error {
 	}
 	if task.Metrics.TotalTarget < 0 {
 		return fmt.Errorf("totalTarget cannot be negative")
+	}
+	if task.StartDate == "" {
+		return fmt.Errorf("startDate is required")
 	}
 	return nil
 }
@@ -103,6 +112,13 @@ func (s *TaskServiceImpl) Update(ctx context.Context, task *Task) (*Task, error)
 
 	task.Status = existing.Status
 
+	// If StartDate is delayed, we need to remove the task from past DailyRecords
+	if task.StartDate > existing.StartDate && s.cleaner != nil {
+		if err := s.cleaner.RemoveTaskFromRecordsBeforeDate(ctx, task.ID, task.StartDate); err != nil {
+			return nil, fmt.Errorf("cleaning past daily records: %w", err)
+		}
+	}
+
 	if err := s.repo.Update(ctx, task); err != nil {
 		return nil, fmt.Errorf("updating task: %w", err)
 	}
@@ -119,6 +135,7 @@ func (s *TaskServiceImpl) Archive(ctx context.Context, id string) error {
 	}
 
 	existing.Status = "archived"
+	existing.EndDate = time.Now().Format("2006-01-02")
 	if err := s.repo.Update(ctx, existing); err != nil {
 		return fmt.Errorf("archiving task: %w", err)
 	}
@@ -168,7 +185,15 @@ func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]Task
 	return progress, nil
 }
 
-func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*MigrationResult, error) {
+func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string, req MigrateTaskRequest) (*MigrationResult, error) {
+	if req.CompletionDate == "" {
+		return nil, fmt.Errorf("completionDate is required")
+	}
+	parsedDate, err := time.Parse("2006-01-02", req.CompletionDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid completionDate format")
+	}
+
 	existing, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("finding task: %w", err)
@@ -194,6 +219,7 @@ func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*Migratio
 
 	// Archive the old task in memory so it can be passed to MigrateTaskAtomic
 	existing.Status = "archived"
+	existing.EndDate = req.CompletionDate
 
 	// Create new task with the same configuration but reset progress.
 	newTask := &Task{
@@ -207,6 +233,7 @@ func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*Migratio
 		},
 		Conditions: existing.Conditions,
 		Status:     "active",
+		StartDate:  parsedDate.AddDate(0, 0, 1).Format("2006-01-02"),
 	}
 
 	if err := s.repo.MigrateTaskAtomic(ctx, existing, newTask); err != nil {

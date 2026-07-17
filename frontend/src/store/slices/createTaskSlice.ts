@@ -54,7 +54,8 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
 
   migrateTask: async (id) => {
     try {
-      const result = await apiMigrateTask(id);
+      const completionDate = get().selectedDate;
+      const result = await apiMigrateTask(id, completionDate);
       set((state) => ({
         tasks: state.tasks
           .map((t) => (t.id === result.archivedTask.id ? result.archivedTask : t))

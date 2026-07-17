@@ -99,3 +99,11 @@ func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs
 	return progressMap, nil
 }
 
+func (r *MongoDailyRecordRepo) RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID primitive.ObjectID, date string) error {
+	filter := bson.M{"date": bson.M{"$lt": date}}
+	update := bson.M{"$pull": bson.M{"tasks": bson.M{"taskId": taskID}}}
+
+	_, err := r.col.UpdateMany(ctx, filter, update)
+	return err
+}
+

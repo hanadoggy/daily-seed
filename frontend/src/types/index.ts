@@ -31,6 +31,8 @@ export interface Task {
   metrics: TaskMetrics;
   conditions: TaskConditions;
   status: 'active' | 'archived';
+  startDate: string;
+  endDate?: string;
 }
 
 export interface Habit {
