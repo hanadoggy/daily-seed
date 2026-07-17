@@ -8,24 +8,25 @@ This repository is structured as a monorepo containing the following core servic
 
 - `frontend/`: React + TypeScript frontend powered by Vite, featuring a multi-theme engine (Light, Dark, British Green) using Shadcn UI and Tailwind CSS.
 - `backend/`: Go backend providing a robust RESTful API following layered architecture (`handler`, `service`, `repository`).
-- `mongo-init/`: Initialization scripts and configuration for the MongoDB database.
 
 ## Prerequisites
 
 - **Go** (1.20+)
-- **Node.js** (18+)
-- **Docker & Docker Compose** (for MongoDB and local dev)
+- **Node.js** (18+) with **pnpm**
+- **Docker & Docker Compose** (for MongoDB, Mongo Express, and local dev)
 
 ## Getting Started
 
-### 1. Database Setup
-Start the local MongoDB instance using Docker Compose:
+### 1. Full Stack (Docker Compose)
+Start all services (MongoDB, Backend, Frontend, Mongo Express) at once:
 ```bash
 docker-compose up -d
 ```
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:8080`
+- Mongo Express (DB Admin): `http://localhost:8081` (daily / seed)
 
-### 2. Backend Setup
-Navigate to the backend directory and run the server:
+### 2. Backend Only (Local Dev)
 ```bash
 cd backend
 go mod tidy
@@ -33,21 +34,25 @@ go run main.go
 ```
 The server will start on `http://localhost:8080`.
 
-### 3. Frontend Setup
-Navigate to the frontend directory, install dependencies, and start the development server:
+### 3. Frontend Only (Local Dev)
 ```bash
 cd frontend
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 The frontend will be available at `http://localhost:5173`.
 
 ## Architecture Highlights
-- **Backend:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows layered architecture with separated handlers, services, and repositories.
-- **Frontend:** React with feature-sliced design principles and global state management via Zustand.
-- **Database:** MongoDB configured with collections for `Tasks`, `Habits`, and `DailyRecords`.
+- **Backend:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows layered architecture with separated handlers, services, and repositories. Task migration uses MongoDB transactions for atomicity.
+- **Frontend:** React with feature-sliced design principles and global state management via Zustand. Optimistic updates with rollback on API failure.
+- **Database:** MongoDB 7 (Replica Set mode) configured with collections for `tasks`, `habits`, and `dailyRecords`.
 
 ## Current Status
-Phase 0 of the project roadmap is completed. The codebase provides the foundational MVP for habit tracking, task progress tracking, dynamic daily record generation, and task migration.
 
-The frontend (React/TypeScript) and backend (Go/MongoDB) are fully integrated, and their data models, API schemas, and data flows have been verified to be highly consistent and stable.
+Phases 0–2 of the project roadmap are completed:
+
+- **Phase 0 (Foundation):** Monorepo structure, CRUD APIs, multi-theme UI, Docker Compose orchestration.
+- **Phase 1 (Motivation & Reflection):** Micro-journaling (auto-save), cumulative progress tracker, atomic task migration.
+- **Phase 2 (Intelligence):** Manual weather & context mode selection, conditional task filtering (weather/mode), automated migration prompts, task start/end date lifecycle.
+
+The frontend (React/TypeScript) and backend (Go/MongoDB) are fully integrated with consistent data models and stable API contracts.
