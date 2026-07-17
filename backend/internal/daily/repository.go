@@ -69,6 +69,7 @@ func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs
 	}
 
 	pipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.M{"tasks.taskId": bson.M{"$in": taskIDs}}}},
 		{{Key: "$unwind", Value: "$tasks"}},
 		{{Key: "$match", Value: bson.M{"tasks.taskId": bson.M{"$in": taskIDs}}}},
 		{{Key: "$group", Value: bson.M{
