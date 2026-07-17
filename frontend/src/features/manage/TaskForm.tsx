@@ -172,7 +172,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           <label className="text-xs font-medium text-muted-foreground">
             Weather Condition
           </label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-1 gap-2">
             {WEATHER_OPTIONS.map(({ value, label, icon: Icon, color }) => {
               const isActive = weather.includes(value);
               return (
@@ -182,7 +182,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   variant="outline"
                   onClick={() => toggleWeather(value)}
                   className={cn(
-                    'flex-1 gap-2 transition-all duration-300 border',
+                    'w-full gap-2 transition-all duration-300 border',
                     isActive
                       ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
@@ -200,7 +200,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
           <label className="text-xs font-medium text-muted-foreground">
             Context Mode
           </label>
-          <div className="flex gap-2 flex-wrap">
+          <div className="grid grid-cols-2 gap-2">
             {MODE_OPTIONS.map(({ value, label, icon: Icon, color }) => {
               const isActive = mode.includes(value);
               return (
@@ -208,10 +208,9 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   key={value}
                   type="button"
                   variant="outline"
-                  size="icon"
                   onClick={() => toggleMode(value)}
                   className={cn(
-                    'transition-all duration-300 border h-9 w-12',
+                    'w-full h-9 transition-all duration-300 border flex items-center justify-center',
                     isActive
                       ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
