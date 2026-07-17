@@ -7,8 +7,9 @@ import type { Task, Habit } from '@/types';
 
 const SECTION_LABELS: Record<string, string> = {
   japanese: '🇯🇵 Japanese',
-  dev: '💻 Development',
+  dev: '💻 Programming',
   self_dev: '📚 Self Development',
+  exercise: '🏋️ Exercise',
 };
 
 interface DailyChecklistProps {
@@ -58,7 +59,7 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
     tasksBySection.set(section, existing);
   }
 
-  const sectionOrder = ['japanese', 'dev', 'self_dev'];
+  const sectionOrder = ['japanese', 'dev', 'self_dev', 'exercise'];
 
   return (
     <div className="space-y-6">

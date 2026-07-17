@@ -9,7 +9,7 @@ import (
 // Task represents a task in the master Tasks collection.
 type Task struct {
 	ID         primitive.ObjectID `json:"id" bson:"_id"`
-	Section    string             `json:"section" bson:"section"` // "japanese" | "dev" | "self_dev"
+	Section    string             `json:"section" bson:"section"` // "japanese" | "dev" | "self_dev" | "exercise"
 	Title      string             `json:"title" bson:"title"`
 	Type       string             `json:"type" bson:"type"` // "quantitative" | "boolean"
 	Metrics    TaskMetrics        `json:"metrics" bson:"metrics"`

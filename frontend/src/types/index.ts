@@ -25,7 +25,7 @@ export interface TaskConditions {
 
 export interface Task {
   id: string;
-  section: 'japanese' | 'dev' | 'self_dev';
+  section: 'japanese' | 'dev' | 'self_dev' | 'exercise';
   title: string;
   type: 'quantitative' | 'boolean';
   metrics: TaskMetrics;

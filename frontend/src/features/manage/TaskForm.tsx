@@ -8,8 +8,9 @@ import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions'
 
 const SECTION_OPTIONS = [
   { value: 'japanese', label: '🇯🇵 Japanese' },
-  { value: 'dev', label: '💻 Development' },
+  { value: 'dev', label: '💻 Programming' },
   { value: 'self_dev', label: '📚 Self Development' },
+  { value: 'exercise', label: '🏋️ Exercise' },
 ] as const;
 
 const TYPE_OPTIONS = [

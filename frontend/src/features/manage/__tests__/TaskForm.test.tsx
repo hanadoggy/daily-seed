@@ -45,4 +45,24 @@ describe('TaskForm', () => {
     const submitBtn = screen.getByRole('button', { name: 'Create Task' });
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('can select exercise section', async () => {
+    render(<TaskForm onClose={mockOnClose} />);
+    
+    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
+    fireEvent.change(titleInput, { target: { value: 'Workout' } });
+    
+    const sectionSelect = screen.getByLabelText('Section');
+    fireEvent.change(sectionSelect, { target: { value: 'exercise' } });
+    
+    const submitBtn = screen.getByRole('button', { name: 'Create Task' });
+    fireEvent.click(submitBtn);
+    
+    await waitFor(() => {
+      expect(mockAddTask).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Workout',
+        section: 'exercise',
+      }));
+    });
+  });
 });

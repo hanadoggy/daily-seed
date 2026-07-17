@@ -5,6 +5,8 @@ import { useAppStore } from '@/store/useAppStore';
 import { TaskForm } from './TaskForm';
 import { HabitForm } from './HabitForm';
 import type { Task, Habit } from '@/types';
+import { cn } from '@/lib/utils';
+import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions';
 
 type Tab = 'tasks' | 'habits';
 type FormState =
@@ -16,8 +18,9 @@ type FormState =
 
 const SECTION_LABELS: Record<string, string> = {
   japanese: '🇯🇵 Japanese',
-  dev: '💻 Dev',
+  dev: '💻 Programming',
   self_dev: '📚 Self Dev',
+  exercise: '🏋️ Exercise',
 };
 
 interface ManagePanelProps {
@@ -30,8 +33,10 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
   const [formState, setFormState] = useState<FormState>({ mode: 'closed' });
   const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null);
   const [confirmingHabitId, setConfirmingHabitId] = useState<string | null>(null);
+  const [taskFilter, setTaskFilter] = useState<'active' | 'archived'>('active');
 
   const activeTasks = tasks.filter((t) => t.status === 'active');
+  const filteredTasks = tasks.filter((t) => t.status === taskFilter);
   const activeHabits = habits.filter((h) => h.status === 'active');
 
   const showingForm = formState.mode !== 'closed';
@@ -107,88 +112,145 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             </div>
           ) : (
             <>
-              {/* Add button */}
-              <Button
-                variant="outline"
-                className="mb-4 w-full gap-1.5"
-                onClick={() =>
-                  setFormState(
-                    activeTab === 'tasks' ? { mode: 'create-task' } : { mode: 'create-habit' },
-                  )
-                }
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add {activeTab === 'tasks' ? 'Task' : 'Habit'}
-              </Button>
+              {/* Add button / Toggle */}
+              {activeTab === 'tasks' ? (
+                <div className="mb-4 flex items-center justify-between gap-2">
+                  <div className="flex rounded-lg border border-border bg-muted/50 p-1">
+                    <button
+                      onClick={() => setTaskFilter('active')}
+                      className={cn(
+                        'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                        taskFilter === 'active'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Active
+                    </button>
+                    <button
+                      onClick={() => setTaskFilter('archived')}
+                      className={cn(
+                        'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                        taskFilter === 'archived'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Archived
+                    </button>
+                  </div>
+                  {taskFilter === 'active' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setFormState({ mode: 'create-task' })}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Add Task
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="mb-4 w-full gap-1.5"
+                  onClick={() => setFormState({ mode: 'create-habit' })}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Habit
+                </Button>
+              )}
 
               {/* List */}
               {activeTab === 'tasks' && (
                 <div className="space-y-2">
-                  {activeTasks.length === 0 && (
+                  {filteredTasks.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">
-                      No active tasks yet. Create one to get started.
+                      No {taskFilter} tasks yet.
                     </p>
                   )}
-                  {activeTasks.map((task) => (
+                  {filteredTasks.map((task) => (
                     <div
                       key={task.id}
                       className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{task.title}</p>
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{SECTION_LABELS[task.section] ?? task.section}</span>
-                          <span>·</span>
-                          <span>
-                            {task.type === 'boolean'
-                              ? 'Yes/No'
-                              : `${task.metrics.dailyTarget}/day`}
-                          </span>
+                        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <span>{SECTION_LABELS[task.section] ?? task.section}</span>
+                            <span>·</span>
+                            <span>
+                              {task.type === 'boolean'
+                                ? 'Yes/No'
+                                : `${task.metrics.dailyTarget}/day`}
+                            </span>
+                            {task.type === 'quantitative' && task.metrics.totalTarget > 0 && (
+                              <>
+                                <span>·</span>
+                                <span>Total: {task.metrics.totalTarget}</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            {WEATHER_OPTIONS.map((opt) => {
+                              if (!task.conditions.weather.includes(opt.value)) return null;
+                              return <opt.icon key={opt.value} className={cn('h-3.5 w-3.5', opt.color)} title={opt.label} />;
+                            })}
+                            <div className="mx-1 h-3 w-px bg-border" />
+                            {MODE_OPTIONS.map((opt) => {
+                              if (!task.conditions.mode.includes(opt.value)) return null;
+                              return <opt.icon key={opt.value} className={cn('h-3.5 w-3.5', opt.color)} title={opt.label} />;
+                            })}
+                          </div>
                         </div>
                       </div>
-                      <div className={`flex gap-1 transition-opacity ${confirmingTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        {confirmingTaskId === task.id ? (
-                          <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
-                            <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
-                              onClick={() => {
-                                archiveTask(task.id);
-                                setConfirmingTaskId(null);
-                              }}
-                            >
-                              ✅
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                              onClick={() => setConfirmingTaskId(null)}
-                            >
-                              ❌
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              onClick={() => setFormState({ mode: 'edit-task', task })}
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon-xs"
-                              onClick={() => setConfirmingTaskId(task.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                      {task.status === 'active' && (
+                        <div className={`flex gap-1 transition-opacity ml-2 ${confirmingTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          {confirmingTaskId === task.id ? (
+                            <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
+                              <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                                onClick={() => {
+                                  archiveTask(task.id);
+                                  setConfirmingTaskId(null);
+                                }}
+                              >
+                                ✅
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                                onClick={() => setConfirmingTaskId(null)}
+                              >
+                                ❌
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => setFormState({ mode: 'edit-task', task })}
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="icon-xs"
+                                onClick={() => setConfirmingTaskId(task.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

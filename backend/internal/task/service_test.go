@@ -166,6 +166,15 @@ func TestTaskService_Update(t *testing.T) {
 			errContains: "type must be one of",
 		},
 		{
+			name: "Fail: update archived task",
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(&task.Task{ID: taskOID1, Status: "archived", StartDate: "2026-07-17"}, nil)
+			},
+			expectError: true,
+			errContains: "cannot update an archived task",
+		},
+		{
 			name: "Fail: not found",
 			task: &task.Task{ID: taskOID2, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
 			mockSetup: func(m *task.MockTaskRepository) {
@@ -236,8 +245,6 @@ func TestTaskService_Update(t *testing.T) {
 }
 
 func TestTaskService_Archive(t *testing.T) {
-	existing := &task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}
-
 	tests := []struct {
 		name        string
 		id          string
@@ -249,12 +256,21 @@ func TestTaskService_Archive(t *testing.T) {
 			name: "Pass: successful archive",
 			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(&task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}, nil)
 				m.On("Update", mock.Anything, mock.MatchedBy(func(task *task.Task) bool {
 					return task.ID == taskOID1 && task.Status == "archived"
 				})).Return(nil)
 			},
 			expectError: false,
+		},
+		{
+			name: "Fail: task is already archived",
+			id:   taskOID1.Hex(),
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(&task.Task{ID: taskOID1, Status: "archived", StartDate: "2026-07-17"}, nil)
+			},
+			expectError: true,
+			errContains: "task is already archived",
 		},
 		{
 			name: "Fail: not found",
@@ -278,7 +294,7 @@ func TestTaskService_Archive(t *testing.T) {
 			name: "Fail: update error",
 			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(&task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,

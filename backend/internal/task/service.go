@@ -42,6 +42,7 @@ var validSections = map[string]bool{
 	"japanese": true,
 	"dev":      true,
 	"self_dev": true,
+	"exercise": true,
 }
 
 var validTaskTypes = map[string]bool{
@@ -57,7 +58,7 @@ func validateTask(task *Task) error {
 		return fmt.Errorf("title is required")
 	}
 	if !validSections[task.Section] {
-		return fmt.Errorf("section must be one of: japanese, dev, self_dev")
+		return fmt.Errorf("section must be one of: japanese, dev, self_dev, exercise")
 	}
 	if !validTaskTypes[task.Type] {
 		return fmt.Errorf("type must be one of: quantitative, boolean")
@@ -126,6 +127,9 @@ func (s *TaskServiceImpl) Update(ctx context.Context, task *Task) (*Task, error)
 	if existing == nil {
 		return nil, fmt.Errorf("task not found: %s", task.ID)
 	}
+	if existing.Status == "archived" {
+		return nil, fmt.Errorf("cannot update an archived task")
+	}
 
 	if err := validateTask(task); err != nil {
 		return nil, err
@@ -153,6 +157,9 @@ func (s *TaskServiceImpl) Archive(ctx context.Context, id string) error {
 	}
 	if existing == nil {
 		return fmt.Errorf("task not found: %s", id)
+	}
+	if existing.Status == "archived" {
+		return fmt.Errorf("task is already archived")
 	}
 
 	existing.Status = "archived"
