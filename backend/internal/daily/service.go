@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type DailyServiceImpl struct {
@@ -72,7 +74,7 @@ func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*Da
 
 // UpdateDailyRecord applies a partial update to the daily record, then returns
 // the full updated record.
-func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, patch map[string]interface{}) (*DailyRecord, error) {
+func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, req *UpdateDailyRecordRequest) (*DailyRecord, error) {
 	if err := validateDate(date); err != nil {
 		return nil, err
 	}
@@ -85,8 +87,8 @@ func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, p
 		return nil, fmt.Errorf("daily record not found for date: %s", date)
 	}
 
-	// Build flat $set fields from the patch.
-	setFields := buildSetFields(patch)
+	// Build flat $set fields from the req.
+	setFields := buildSetFields(req)
 	if len(setFields) == 0 {
 		return existing, nil
 	}
@@ -100,20 +102,30 @@ func (s *DailyServiceImpl) UpdateDailyRecord(ctx context.Context, date string, p
 
 // buildSetFields converts a nested patch map into flat dot-notation keys
 // suitable for MongoDB $set. Supported top-level keys: context, tasks, habits, journal.
-func buildSetFields(patch map[string]interface{}) map[string]interface{} {
+func buildSetFields(req *UpdateDailyRecordRequest) map[string]interface{} {
 	set := make(map[string]interface{})
 
-	if v, ok := patch["context"]; ok {
-		set["context"] = v
+	if req.Context != nil {
+		if req.Context.Mode != nil {
+			set["context.mode"] = *req.Context.Mode
+		}
+		if req.Context.Weather != nil {
+			set["context.weather"] = *req.Context.Weather
+		}
 	}
-	if v, ok := patch["tasks"]; ok {
-		set["tasks"] = v
+	if req.Tasks != nil {
+		set["tasks"] = req.Tasks
 	}
-	if v, ok := patch["habits"]; ok {
-		set["habits"] = v
+	if req.Habits != nil {
+		set["habits"] = req.Habits
 	}
-	if v, ok := patch["journal"]; ok {
-		set["journal"] = v
+	if req.Journal != nil {
+		if req.Journal.OneLineReview != nil {
+			set["journal.oneLineReview"] = *req.Journal.OneLineReview
+		}
+		if req.Journal.ThreeLineDiary != nil {
+			set["journal.threeLineDiary"] = *req.Journal.ThreeLineDiary
+		}
 	}
 
 	return set
@@ -149,7 +161,7 @@ func (s *DailyServiceImpl) generateDailyRecord(ctx context.Context, date string)
 	}
 
 	return &DailyRecord{
-		ID:   date,
+		ID:   primitive.NewObjectID(),
 		Date: date,
 		Context: DayContext{
 			Mode:    "Growth",
@@ -171,7 +183,7 @@ func (s *DailyServiceImpl) appendMissingEntries(ctx context.Context, record *Dai
 	if err != nil {
 		return false, fmt.Errorf("fetching active tasks: %w", err)
 	}
-	existingTasks := make(map[string]bool)
+	existingTasks := make(map[primitive.ObjectID]bool)
 	for _, t := range record.Tasks {
 		existingTasks[t.TaskID] = true
 	}
@@ -191,7 +203,7 @@ func (s *DailyServiceImpl) appendMissingEntries(ctx context.Context, record *Dai
 	if err != nil {
 		return false, fmt.Errorf("fetching active habits: %w", err)
 	}
-	existingHabits := make(map[string]bool)
+	existingHabits := make(map[primitive.ObjectID]bool)
 	for _, h := range record.Habits {
 		existingHabits[h.HabitID] = true
 	}

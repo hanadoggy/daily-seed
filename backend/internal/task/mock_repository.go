@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type MockTaskRepository struct {
@@ -44,8 +45,13 @@ func (m *MockTaskRepository) Update(ctx context.Context, task *Task) error {
 	return args.Error(0)
 }
 
-func (m *MockTaskRepository) Delete(ctx context.Context, id string) error {
-	args := m.Called(ctx, id)
+func (m *MockTaskRepository) MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error {
+	args := m.Called(ctx, archivedTask, newTask)
+	return args.Error(0)
+}
+
+func (m *MockTaskRepository) EnsureIndexes(ctx context.Context) error {
+	args := m.Called(ctx)
 	return args.Error(0)
 }
 
@@ -53,8 +59,11 @@ type MockTaskProgressAggregator struct {
 	mock.Mock
 }
 
-func (m *MockTaskProgressAggregator) SumTaskProgress(ctx context.Context, taskID string) (int, error) {
-	args := m.Called(ctx, taskID)
-	return args.Int(0), args.Error(1)
+func (m *MockTaskProgressAggregator) SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error) {
+	args := m.Called(ctx, taskIDs)
+	if args.Get(0) != nil {
+		return args.Get(0).(map[primitive.ObjectID]int), args.Error(1)
+	}
+	return nil, args.Error(1)
 }
 

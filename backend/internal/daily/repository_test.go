@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestDailyRecordRepository(t *testing.T) {
@@ -29,7 +30,7 @@ func TestDailyRecordRepository(t *testing.T) {
 	t.Run("Upsert_And_FindByDate", func(t *testing.T) {
 		testutil.ClearDB(ctx)
 		record := &daily.DailyRecord{
-			ID:   date,
+			ID:   primitive.NewObjectID(),
 			Date: date,
 			Context: daily.DayContext{
 				Mode: "Growth",
@@ -42,12 +43,12 @@ func TestDailyRecordRepository(t *testing.T) {
 		found, err := repo.FindByDate(ctx, date)
 		require.NoError(t, err)
 		assert.NotNil(t, found)
-		assert.Equal(t, "Growth", found.Context.Mode)
+		assert.Equal(t, daily.ContextMode("Growth"), found.Context.Mode)
 	})
 
 	t.Run("PatchByDate", func(t *testing.T) {
 		testutil.ClearDB(ctx)
-		record := &daily.DailyRecord{ID: date, Date: date}
+		record := &daily.DailyRecord{ID: primitive.NewObjectID(), Date: date}
 		require.NoError(t, repo.Upsert(ctx, record))
 
 		err := repo.PatchByDate(ctx, date, bson.M{"context.mode": "British Green"})
@@ -55,13 +56,13 @@ func TestDailyRecordRepository(t *testing.T) {
 
 		found, err := repo.FindByDate(ctx, date)
 		require.NoError(t, err)
-		assert.Equal(t, "British Green", found.Context.Mode)
+		assert.Equal(t, daily.ContextMode("British Green"), found.Context.Mode)
 	})
 
 	t.Run("Context_Cancellation", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc() // cancel immediately
-		err := repo.Upsert(cancelCtx, &daily.DailyRecord{ID: "ctx_test"})
+		err := repo.Upsert(cancelCtx, &daily.DailyRecord{ID: primitive.NewObjectID()})
 		assert.ErrorIs(t, err, context.Canceled)
 		
 		_, err = repo.FindByDate(cancelCtx, "2023-11-11")

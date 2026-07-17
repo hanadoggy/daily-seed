@@ -2,12 +2,17 @@ services:
   mongodb:
     image: mongo:7
     container_name: daily-seed-mongo
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
       - "27017:27017"
     volumes:
       - mongo-data:/data/db
     networks:
       - app-network
+    healthcheck:
+      test: mongosh --eval "rs.initiate().ok || rs.status().ok"
+      interval: 10s
+      start_period: 30s
 
   mongo-express:
     image: mongo-express:latest

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +21,9 @@ func TestTaskRepository(t *testing.T) {
 
 	t.Run("Create_And_FindByID", func(t *testing.T) {
 		testutil.ClearDB(ctx)
+		t1ID := primitive.NewObjectID()
 		task := &task.Task{
-			ID:     "task_1",
+			ID:     t1ID,
 			Title:  "Test Task",
 			Status: "active",
 		}
@@ -28,7 +31,7 @@ func TestTaskRepository(t *testing.T) {
 		err := repo.Create(ctx, task)
 		require.NoError(t, err)
 
-		found, err := repo.FindByID(ctx, "task_1")
+		found, err := repo.FindByID(ctx, t1ID.Hex())
 		require.NoError(t, err)
 		assert.NotNil(t, found)
 		assert.Equal(t, "Test Task", found.Title)
@@ -36,40 +39,46 @@ func TestTaskRepository(t *testing.T) {
 
 	t.Run("FindActiveTasks", func(t *testing.T) {
 		testutil.ClearDB(ctx)
-		require.NoError(t, repo.Create(ctx, &task.Task{ID: "t1", Status: "active"}))
-		require.NoError(t, repo.Create(ctx, &task.Task{ID: "t2", Status: "archived"}))
+		t1ID := primitive.NewObjectID()
+		require.NoError(t, repo.Create(ctx, &task.Task{ID: t1ID, Status: "active"}))
+		require.NoError(t, repo.Create(ctx, &task.Task{ID: primitive.NewObjectID(), Status: "archived"}))
 
 		active, err := repo.FindActiveTasks(ctx)
 		require.NoError(t, err)
 		assert.Len(t, active, 1)
-		assert.Equal(t, "t1", active[0].ID)
+		assert.Equal(t, t1ID, active[0].ID)
 	})
 
-	t.Run("Update_And_Delete", func(t *testing.T) {
+	t.Run("Update_And_MigrateTaskAtomic", func(t *testing.T) {
 		testutil.ClearDB(ctx)
-		task := &task.Task{ID: "t1", Title: "Old", Status: "active"}
-		require.NoError(t, repo.Create(ctx, task))
+		t1ID := primitive.NewObjectID()
+		t1 := &task.Task{ID: t1ID, Title: "Old", Status: "active"}
+		require.NoError(t, repo.Create(ctx, t1))
 
-		task.Title = "New"
-		require.NoError(t, repo.Update(ctx, task))
+		t1.Title = "New"
+		require.NoError(t, repo.Update(ctx, t1))
 
-		found, err := repo.FindByID(ctx, "t1")
+		found, err := repo.FindByID(ctx, t1ID.Hex())
 		require.NoError(t, err)
 		assert.Equal(t, "New", found.Title)
 
-		require.NoError(t, repo.Delete(ctx, "t1"))
-		found, err = repo.FindByID(ctx, "t1")
-		require.NoError(t, err)
-		assert.Nil(t, found)
+		newTask := &task.Task{ID: primitive.NewObjectID(), Title: "New Task", Status: "active"}
+		require.NoError(t, repo.MigrateTaskAtomic(ctx, found, newTask))
+		
+		archived, _ := repo.FindByID(ctx, t1ID.Hex())
+		assert.Equal(t, "archived", archived.Status)
+
+		created, _ := repo.FindByID(ctx, newTask.ID.Hex())
+		assert.Equal(t, "active", created.Status)
 	})
 
 	t.Run("Context_Cancellation", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc() // cancel immediately
-		err := repo.Create(cancelCtx, &task.Task{ID: "ctx_test"})
+		err := repo.Create(cancelCtx, &task.Task{ID: primitive.NewObjectID()})
 		assert.ErrorIs(t, err, context.Canceled)
 		
-		_, err = repo.FindByID(cancelCtx, "t1")
+		_, err = repo.FindByID(cancelCtx, primitive.NewObjectID().Hex())
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 }

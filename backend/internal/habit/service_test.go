@@ -8,6 +8,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+func testOID(hex string) primitive.ObjectID {
+	id, _ := primitive.ObjectIDFromHex(hex)
+	return id
+}
+
+var (
+	habitOID1 = testOID("000000000000000000000001")
+	habitOID2 = testOID("000000000000000000000002")
 )
 
 func TestHabitService_Create(t *testing.T) {
@@ -98,7 +109,7 @@ func TestHabitService_Create(t *testing.T) {
 }
 
 func TestHabitService_Update(t *testing.T) {
-	existingHabit := &Habit{ID: "habit_1", Title: "Walk", Category: "Health", Status: "active"}
+	existingHabit := &Habit{ID: habitOID1, Title: "Walk", Category: "Health", Status: "active"}
 
 	tests := []struct {
 		name        string
@@ -110,12 +121,12 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Pass: successful update",
 			habit: &Habit{
-				ID:       "habit_1",
+				ID:       habitOID1,
 				Title:    "Evening Walk",
 				Category: "Health",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*habit.Habit")).Return(nil)
 			},
 			expectError: false,
@@ -123,11 +134,11 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Fail: habit not found",
 			habit: &Habit{
-				ID:    "habit_unknown",
+				ID:    habitOID2,
 				Title: "Walk",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_unknown").Return(nil, nil)
+				m.On("FindByID", mock.Anything, habitOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "habit not found",
@@ -135,11 +146,11 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Fail: FindByID repo error",
 			habit: &Habit{
-				ID:    "habit_1",
+				ID:    habitOID1,
 				Title: "Walk",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding habit",
@@ -147,11 +158,11 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Fail: empty title (edge)",
 			habit: &Habit{
-				ID:    "habit_1",
+				ID:    habitOID1,
 				Title: "   ",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 			},
 			expectError: true,
 			errContains: "title is required",
@@ -159,12 +170,12 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Fail: empty category (edge)",
 			habit: &Habit{
-				ID:       "habit_1",
+				ID:       habitOID1,
 				Title:    "Valid Title",
 				Category: "   ",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 			},
 			expectError: true,
 			errContains: "category is required",
@@ -172,12 +183,12 @@ func TestHabitService_Update(t *testing.T) {
 		{
 			name: "Fail: update repo error",
 			habit: &Habit{
-				ID:       "habit_1",
+				ID:       habitOID1,
 				Title:    "Walk 2",
 				Category: "Health",
 			},
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
@@ -209,7 +220,7 @@ func TestHabitService_Update(t *testing.T) {
 }
 
 func TestHabitService_Archive(t *testing.T) {
-	existingHabit := &Habit{ID: "habit_1", Status: "active"}
+	existingHabit := &Habit{ID: habitOID1, Status: "active"}
 
 	tests := []struct {
 		name        string
@@ -220,9 +231,9 @@ func TestHabitService_Archive(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful archive",
-			id:   "habit_1",
+			id:   habitOID1.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 				m.On("Update", mock.Anything, mock.MatchedBy(func(h *Habit) bool {
 					return h.Status == "archived"
 				})).Return(nil)
@@ -231,27 +242,27 @@ func TestHabitService_Archive(t *testing.T) {
 		},
 		{
 			name: "Fail: not found",
-			id:   "habit_unknown",
+			id:   habitOID2.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_unknown").Return(nil, nil)
+				m.On("FindByID", mock.Anything, habitOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "habit not found",
 		},
 		{
 			name: "Fail: FindByID error",
-			id:   "habit_1",
+			id:   habitOID1.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding habit",
 		},
 		{
 			name: "Fail: Update error",
-			id:   "habit_1",
+			id:   habitOID1.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
@@ -280,7 +291,7 @@ func TestHabitService_Archive(t *testing.T) {
 }
 
 func TestHabitService_Get(t *testing.T) {
-	existingHabit := &Habit{ID: "habit_1", Title: "Walk"}
+	existingHabit := &Habit{ID: habitOID1, Title: "Walk"}
 
 	tests := []struct {
 		name        string
@@ -291,26 +302,26 @@ func TestHabitService_Get(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful get",
-			id:   "habit_1",
+			id:   habitOID1.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(existingHabit, nil)
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(existingHabit, nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: not found",
-			id:   "habit_unknown",
+			id:   habitOID2.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_unknown").Return(nil, nil)
+				m.On("FindByID", mock.Anything, habitOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "habit not found",
 		},
 		{
 			name: "Fail: db error",
-			id:   "habit_1",
+			id:   habitOID1.Hex(),
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindByID", mock.Anything, "habit_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, habitOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding habit",
@@ -348,7 +359,7 @@ func TestHabitService_List(t *testing.T) {
 		{
 			name: "Pass: successful list",
 			mockSetup: func(m *MockHabitRepository) {
-				m.On("FindAll", mock.Anything).Return([]Habit{{ID: "1"}, {ID: "2"}}, nil)
+				m.On("FindAll", mock.Anything).Return([]Habit{{ID: habitOID1}, {ID: habitOID2}}, nil)
 			},
 			expectError: false,
 		},

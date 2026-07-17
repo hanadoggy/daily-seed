@@ -44,7 +44,7 @@ func (m *MockHabitRepository) Update(ctx context.Context, habit *Habit) error {
 	return args.Error(0)
 }
 
-func (m *MockHabitRepository) Delete(ctx context.Context, id string) error {
-	args := m.Called(ctx, id)
+func (m *MockHabitRepository) EnsureIndexes(ctx context.Context) error {
+	args := m.Called(ctx)
 	return args.Error(0)
 }

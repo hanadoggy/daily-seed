@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +21,9 @@ func TestHabitRepository(t *testing.T) {
 
 	t.Run("Create_And_FindByID", func(t *testing.T) {
 		testutil.ClearDB(ctx)
+		h1ID := primitive.NewObjectID()
 		habit := &habit.Habit{
-			ID:     "habit_1",
+			ID:     h1ID,
 			Title:  "Drink Water",
 			Status: "active",
 		}
@@ -28,7 +31,7 @@ func TestHabitRepository(t *testing.T) {
 		err := repo.Create(ctx, habit)
 		require.NoError(t, err)
 
-		found, err := repo.FindByID(ctx, "habit_1")
+		found, err := repo.FindByID(ctx, h1ID.Hex())
 		require.NoError(t, err)
 		assert.NotNil(t, found)
 		assert.Equal(t, "Drink Water", found.Title)
@@ -36,22 +39,23 @@ func TestHabitRepository(t *testing.T) {
 
 	t.Run("FindActiveHabits", func(t *testing.T) {
 		testutil.ClearDB(ctx)
-		require.NoError(t, repo.Create(ctx, &habit.Habit{ID: "h1", Status: "active"}))
-		require.NoError(t, repo.Create(ctx, &habit.Habit{ID: "h2", Status: "archived"}))
+		h1ID := primitive.NewObjectID()
+		require.NoError(t, repo.Create(ctx, &habit.Habit{ID: h1ID, Status: "active"}))
+		require.NoError(t, repo.Create(ctx, &habit.Habit{ID: primitive.NewObjectID(), Status: "archived"}))
 
 		active, err := repo.FindActiveHabits(ctx)
 		require.NoError(t, err)
 		assert.Len(t, active, 1)
-		assert.Equal(t, "h1", active[0].ID)
+		assert.Equal(t, h1ID, active[0].ID)
 	})
 
 	t.Run("Context_Cancellation", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc() // cancel immediately
-		err := repo.Create(cancelCtx, &habit.Habit{ID: "ctx_test"})
+		err := repo.Create(cancelCtx, &habit.Habit{ID: primitive.NewObjectID()})
 		assert.ErrorIs(t, err, context.Canceled)
 		
-		_, err = repo.FindByID(cancelCtx, "h1")
+		_, err = repo.FindByID(cancelCtx, primitive.NewObjectID().Hex())
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 }

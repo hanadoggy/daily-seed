@@ -3,7 +3,10 @@ package habit
 import (
 	"context"
 
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -44,8 +47,12 @@ func (r *MongoHabitRepo) FindAll(ctx context.Context) ([]Habit, error) {
 }
 
 func (r *MongoHabitRepo) FindByID(ctx context.Context, id string) (*Habit, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid habit id format: %w", err)
+	}
 	var habit Habit
-	err := r.col.FindOne(ctx, bson.M{"_id": id}).Decode(&habit)
+	err = r.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&habit)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -67,7 +74,10 @@ func (r *MongoHabitRepo) Update(ctx context.Context, habit *Habit) error {
 	return err
 }
 
-func (r *MongoHabitRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.col.DeleteOne(ctx, bson.M{"_id": id})
+func (r *MongoHabitRepo) EnsureIndexes(ctx context.Context) error {
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{Key: "status", Value: 1}},
+	}
+	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
 	return err
 }

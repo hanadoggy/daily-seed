@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskHandler struct {
@@ -99,7 +100,15 @@ func (h *TaskHandler) Update(c *gin.Context) {
 		return
 	}
 
-	task.ID = id
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "INVALID_ID",
+			Message: "Invalid task ID format",
+		})
+		return
+	}
+	task.ID = oid
 	updated, err := h.svc.Update(c.Request.Context(), &task)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

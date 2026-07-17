@@ -1,16 +1,20 @@
 package task
 
-import "context"
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 // Task represents a task in the master Tasks collection.
 type Task struct {
-	ID         string         `json:"id" bson:"_id"`
-	Section    string         `json:"section" bson:"section"` // "japanese" | "dev" | "self_dev"
-	Title      string         `json:"title" bson:"title"`
-	Type       string         `json:"type" bson:"type"` // "quantitative" | "boolean"
-	Metrics    TaskMetrics    `json:"metrics" bson:"metrics"`
-	Conditions TaskConditions `json:"conditions" bson:"conditions"`
-	Status     string         `json:"status" bson:"status"` // "active" | "archived"
+	ID         primitive.ObjectID `json:"id" bson:"_id"`
+	Section    string             `json:"section" bson:"section"` // "japanese" | "dev" | "self_dev"
+	Title      string             `json:"title" bson:"title"`
+	Type       string             `json:"type" bson:"type"` // "quantitative" | "boolean"
+	Metrics    TaskMetrics        `json:"metrics" bson:"metrics"`
+	Conditions TaskConditions     `json:"conditions" bson:"conditions"`
+	Status     string             `json:"status" bson:"status"` // "active" | "archived"
 }
 
 type TaskMetrics struct {
@@ -25,11 +29,11 @@ type TaskConditions struct {
 
 // TaskProgress represents a task's cumulative progress across all daily records.
 type TaskProgress struct {
-	TaskID         string  `json:"taskId"`
-	Title          string  `json:"title"`
-	TotalTarget    int     `json:"totalTarget"`
-	TotalCompleted int     `json:"totalCompleted"`
-	Percentage     float64 `json:"percentage"`
+	TaskID         primitive.ObjectID `json:"taskId"`
+	Title          string             `json:"title"`
+	TotalTarget    int                `json:"totalTarget"`
+	TotalCompleted int                `json:"totalCompleted"`
+	Percentage     float64            `json:"percentage"`
 }
 
 // MigrationResult is the response from a task migration operation.
@@ -54,12 +58,13 @@ type TaskRepository interface {
 	FindByID(ctx context.Context, id string) (*Task, error)
 	Create(ctx context.Context, task *Task) error
 	Update(ctx context.Context, task *Task) error
-	Delete(ctx context.Context, id string) error
+	MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error
+	EnsureIndexes(ctx context.Context) error
 }
 
 // TaskProgressAggregator provides cumulative progress data from daily records.
 // Defined here to avoid circular imports with the daily package.
 type TaskProgressAggregator interface {
-	SumTaskProgress(ctx context.Context, taskID string) (int, error)
+	SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error)
 }
 

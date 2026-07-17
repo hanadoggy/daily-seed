@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -16,9 +17,18 @@ func NewDailyRecordRepository(db *mongo.Database) *MongoDailyRecordRepo {
 	return &MongoDailyRecordRepo{col: db.Collection("dailyRecords")}
 }
 
+func (r *MongoDailyRecordRepo) EnsureIndexes(ctx context.Context) error {
+	indexModel := mongo.IndexModel{
+		Keys:    bson.D{{Key: "date", Value: 1}},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
+	return err
+}
+
 func (r *MongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*DailyRecord, error) {
 	var record DailyRecord
-	err := r.col.FindOne(ctx, bson.M{"_id": date}).Decode(&record)
+	err := r.col.FindOne(ctx, bson.M{"date": date}).Decode(&record)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -38,7 +48,7 @@ func (r *MongoDailyRecordRepo) Upsert(ctx context.Context, record *DailyRecord) 
 }
 
 func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
-	filter := bson.M{"_id": date}
+	filter := bson.M{"date": date}
 	update := bson.M{"$set": setFields}
 
 	result, err := r.col.UpdateOne(ctx, filter, update)
@@ -53,32 +63,38 @@ func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, set
 
 // SumTaskProgress aggregates the total actualAmount for a given taskId across
 // all daily records. This satisfies the task.TaskProgressAggregator interface.
-func (r *MongoDailyRecordRepo) SumTaskProgress(ctx context.Context, taskID string) (int, error) {
+func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error) {
+	if len(taskIDs) == 0 {
+		return make(map[primitive.ObjectID]int), nil
+	}
+
 	pipeline := mongo.Pipeline{
 		{{Key: "$unwind", Value: "$tasks"}},
-		{{Key: "$match", Value: bson.M{"tasks.taskId": taskID}}},
+		{{Key: "$match", Value: bson.M{"tasks.taskId": bson.M{"$in": taskIDs}}}},
 		{{Key: "$group", Value: bson.M{
-			"_id":   nil,
+			"_id":   "$tasks.taskId",
 			"total": bson.M{"$sum": "$tasks.actualAmount"},
 		}}},
 	}
 
 	cursor, err := r.col.Aggregate(ctx, pipeline)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	defer cursor.Close(ctx)
 
 	var results []struct {
-		Total int `bson:"total"`
+		ID    primitive.ObjectID `bson:"_id"`
+		Total int                `bson:"total"`
 	}
 	if err := cursor.All(ctx, &results); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	if len(results) == 0 {
-		return 0, nil
+	progressMap := make(map[primitive.ObjectID]int)
+	for _, r := range results {
+		progressMap[r.ID] = r.Total
 	}
-	return results[0].Total, nil
+	return progressMap, nil
 }
 

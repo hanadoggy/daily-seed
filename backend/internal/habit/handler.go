@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HabitHandler struct {
@@ -96,7 +97,15 @@ func (h *HabitHandler) Update(c *gin.Context) {
 		return
 	}
 
-	habit.ID = id
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "INVALID_ID",
+			Message: "Invalid habit ID format",
+		})
+		return
+	}
+	habit.ID = oid
 	updated, err := h.svc.Update(c.Request.Context(), &habit)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

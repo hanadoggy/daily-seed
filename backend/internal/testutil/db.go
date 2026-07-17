@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var DB *mongo.Database
@@ -17,7 +18,7 @@ var DB *mongo.Database
 func RunWithDB(m *testing.M) {
 	ctx := context.Background()
 
-	mongodbContainer, err := mongodb.Run(ctx, "mongo:7.0")
+	mongodbContainer, err := mongodb.Run(ctx, "mongo:5.0", mongodb.WithReplicaSet("rs0"))
 	if err != nil {
 		log.Fatalf("failed to start container: %s", err)
 	}
@@ -33,13 +34,19 @@ func RunWithDB(m *testing.M) {
 		log.Fatalf("failed to get connection string: %s", err)
 	}
 
-	clientOpts := options.Client().ApplyURI(uri)
+	clientOpts := options.Client().ApplyURI(uri).SetDirect(true)
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Fatalf("failed to connect to mongo: %s", err)
 	}
 
 	DB = client.Database("daily-seed-test")
+
+	// Wait for replica set primary to be elected
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatalf("failed to ping primary: %s", err)
+	}
 
 	code := m.Run()
 

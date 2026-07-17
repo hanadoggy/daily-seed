@@ -56,6 +56,17 @@ func main() {
 	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo)
 	habitSvc := habit.NewHabitService(habitRepo)
 
+	// Ensure Indexes
+	if err := habitRepo.EnsureIndexes(ctx); err != nil {
+		slog.Error("failed to ensure habit indexes", slog.String("error", err.Error()))
+	}
+	if err := taskRepo.EnsureIndexes(ctx); err != nil {
+		slog.Error("failed to ensure task indexes", slog.String("error", err.Error()))
+	}
+	if err := dailyRecordRepo.EnsureIndexes(ctx); err != nil {
+		slog.Error("failed to ensure daily record indexes", slog.String("error", err.Error()))
+	}
+
 	dailyHandler := daily.NewDailyHandler(dailySvc)
 	taskHandler := task.NewTaskHandler(taskSvc)
 	habitHandler := habit.NewHabitHandler(habitSvc)

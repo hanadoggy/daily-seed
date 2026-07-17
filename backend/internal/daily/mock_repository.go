@@ -28,3 +28,8 @@ func (m *MockDailyRecordRepository) PatchByDate(ctx context.Context, date string
 	args := m.Called(ctx, date, setFields)
 	return args.Error(0)
 }
+
+func (m *MockDailyRecordRepository) EnsureIndexes(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}

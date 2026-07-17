@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
-	"daily-seed/pkg/jst"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HabitServiceImpl struct {
@@ -40,7 +39,7 @@ func (s *HabitServiceImpl) Create(ctx context.Context, habit *Habit) (*Habit, er
 		return nil, fmt.Errorf("category is required")
 	}
 
-	habit.ID = fmt.Sprintf("habit_%d", time.Now().In(jst.Location()).UnixMilli())
+	habit.ID = primitive.NewObjectID()
 	habit.Status = "active"
 
 	if err := s.repo.Create(ctx, habit); err != nil {
@@ -50,7 +49,7 @@ func (s *HabitServiceImpl) Create(ctx context.Context, habit *Habit) (*Habit, er
 }
 
 func (s *HabitServiceImpl) Update(ctx context.Context, habit *Habit) (*Habit, error) {
-	existing, err := s.repo.FindByID(ctx, habit.ID)
+	existing, err := s.repo.FindByID(ctx, habit.ID.Hex())
 	if err != nil {
 		return nil, fmt.Errorf("finding habit: %w", err)
 	}

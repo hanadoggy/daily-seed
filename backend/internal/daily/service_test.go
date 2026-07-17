@@ -11,12 +11,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func testOID(hex string) primitive.ObjectID {
+	id, _ := primitive.ObjectIDFromHex(hex)
+	return id
+}
 
 func TestDailyService_GetDailyRecord(t *testing.T) {
 	ctx := context.Background()
 	date := "2023-10-10"
-	existingRecord := &daily.DailyRecord{ID: date, Date: date}
+	existingRecord := &daily.DailyRecord{ID: testOID("000000000000000000000001"), Date: date}
 
 	tests := []struct {
 		name        string
@@ -76,17 +82,17 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 			date: date,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
-				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{{ID: "t1", Metrics: task.TaskMetrics{DailyTarget: 2}}}, nil)
-				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{{ID: "h1"}}, nil)
+				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{{ID: testOID("000000000000000000000001"), Metrics: task.TaskMetrics{DailyTarget: 2}}}, nil)
+				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{{ID: testOID("000000000000000000000002")}}, nil)
 				dRepo.On("Upsert", ctx, mock.AnythingOfType("*daily.DailyRecord")).Return(nil)
 			},
 			expectError: false,
 			validate: func(t *testing.T, record *daily.DailyRecord) {
 				assert.Equal(t, date, record.Date)
 				assert.Len(t, record.Tasks, 1)
-				assert.Equal(t, "t1", record.Tasks[0].TaskID)
+				assert.Equal(t, testOID("000000000000000000000001"), record.Tasks[0].TaskID)
 				assert.Len(t, record.Habits, 1)
-				assert.Equal(t, "h1", record.Habits[0].HabitID)
+				assert.Equal(t, testOID("000000000000000000000002"), record.Habits[0].HabitID)
 			},
 		},
 		{
@@ -156,12 +162,12 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 func TestDailyService_UpdateDailyRecord(t *testing.T) {
 	ctx := context.Background()
 	date := "2023-10-10"
-	existingRecord := &daily.DailyRecord{ID: date, Date: date}
+	existingRecord := &daily.DailyRecord{ID: testOID("000000000000000000000001"), Date: date}
 
 	tests := []struct {
 		name        string
 		date        string
-		patch       map[string]interface{}
+		patch       *daily.UpdateDailyRecordRequest
 		mockSetup   func(*daily.MockDailyRecordRepository, *task.MockTaskRepository, *habit.MockHabitRepository)
 		expectError bool
 		errContains string
@@ -169,7 +175,7 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 		{
 			name:  "Pass: successful update with fields",
 			date:  date,
-			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
+			patch: &daily.UpdateDailyRecordRequest{Context: &daily.DayContextPatch{Mode: (*daily.ContextMode)(func() *string { s := "Growth"; return &s }())}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once() // First GetDailyRecord call
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
@@ -182,7 +188,7 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 		{
 			name:  "Pass: empty patch does nothing",
 			date:  date,
-			patch: map[string]interface{}{"unknown": "field"},
+			patch: &daily.UpdateDailyRecordRequest{},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once() // Only GetDailyRecord called
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
@@ -193,7 +199,7 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 		{
 			name:  "Fail: GetDailyRecord error",
 			date:  date,
-			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
+			patch: &daily.UpdateDailyRecordRequest{Context: &daily.DayContextPatch{Mode: (*daily.ContextMode)(func() *string { s := "Growth"; return &s }())}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(nil, errors.New("db error")).Once()
 			},
@@ -203,7 +209,7 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 		{
 			name:  "Fail: PatchByDate error",
 			date:  date,
-			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
+			patch: &daily.UpdateDailyRecordRequest{Context: &daily.DayContextPatch{Mode: (*daily.ContextMode)(func() *string { s := "Growth"; return &s }())}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(existingRecord, nil).Once()
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
@@ -216,7 +222,7 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 		{
 			name:  "Fail: invalid date format",
 			date:  "invalid-date",
-			patch: map[string]interface{}{"context": daily.DayContext{Mode: "Focus"}},
+			patch: &daily.UpdateDailyRecordRequest{Context: &daily.DayContextPatch{Mode: (*daily.ContextMode)(func() *string { s := "Growth"; return &s }())}},
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {},
 			expectError: true,
 			errContains: "invalid date format",

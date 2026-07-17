@@ -3,16 +3,31 @@ package task
 import (
 	"context"
 
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MongoTaskRepo struct {
-	col *mongo.Collection
+	client *mongo.Client
+	col    *mongo.Collection
 }
 
 func NewTaskRepository(db *mongo.Database) TaskRepository {
-	return &MongoTaskRepo{col: db.Collection("tasks")}
+	return &MongoTaskRepo{
+		client: db.Client(),
+		col:    db.Collection("tasks"),
+	}
+}
+
+func (r *MongoTaskRepo) EnsureIndexes(ctx context.Context) error {
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{{Key: "status", Value: 1}},
+	}
+	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
+	return err
 }
 
 func (r *MongoTaskRepo) FindActiveTasks(ctx context.Context) ([]Task, error) {
@@ -44,8 +59,12 @@ func (r *MongoTaskRepo) FindAll(ctx context.Context) ([]Task, error) {
 }
 
 func (r *MongoTaskRepo) FindByID(ctx context.Context, id string) (*Task, error) {
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, fmt.Errorf("invalid task id format: %w", err)
+	}
 	var task Task
-	err := r.col.FindOne(ctx, bson.M{"_id": id}).Decode(&task)
+	err = r.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -67,7 +86,26 @@ func (r *MongoTaskRepo) Update(ctx context.Context, task *Task) error {
 	return err
 }
 
-func (r *MongoTaskRepo) Delete(ctx context.Context, id string) error {
-	_, err := r.col.DeleteOne(ctx, bson.M{"_id": id})
+func (r *MongoTaskRepo) MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error {
+	session, err := r.client.StartSession()
+	if err != nil {
+		return fmt.Errorf("starting session: %w", err)
+	}
+	defer session.EndSession(ctx)
+
+	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
+		// Archive old task
+		filter := bson.M{"_id": archivedTask.ID}
+		update := bson.M{"$set": bson.M{"status": "archived"}}
+		if _, err := r.col.UpdateOne(sessCtx, filter, update); err != nil {
+			return nil, fmt.Errorf("archiving old task: %w", err)
+		}
+
+		// Insert new task
+		if _, err := r.col.InsertOne(sessCtx, newTask); err != nil {
+			return nil, fmt.Errorf("inserting new task: %w", err)
+		}
+		return nil, nil
+	})
 	return err
 }

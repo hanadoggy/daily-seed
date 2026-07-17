@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
-	"daily-seed/pkg/jst"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TaskServiceImpl struct {
@@ -68,7 +67,7 @@ func (s *TaskServiceImpl) Create(ctx context.Context, task *Task) (*Task, error)
 		return nil, err
 	}
 
-	task.ID = fmt.Sprintf("task_%d", time.Now().In(jst.Location()).UnixMilli())
+	task.ID = primitive.NewObjectID()
 	task.Status = "active"
 
 	// Default conditions if not provided.
@@ -90,7 +89,7 @@ func (s *TaskServiceImpl) Create(ctx context.Context, task *Task) (*Task, error)
 }
 
 func (s *TaskServiceImpl) Update(ctx context.Context, task *Task) (*Task, error) {
-	existing, err := s.repo.FindByID(ctx, task.ID)
+	existing, err := s.repo.FindByID(ctx, task.ID.Hex())
 	if err != nil {
 		return nil, fmt.Errorf("finding task: %w", err)
 	}
@@ -132,17 +131,25 @@ func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]Task
 		return nil, fmt.Errorf("fetching active tasks: %w", err)
 	}
 
-	progress := make([]TaskProgress, 0, len(tasks))
+	taskIDs := make([]primitive.ObjectID, 0, len(tasks))
 	for _, t := range tasks {
-		// Skip boolean tasks — they don't have meaningful cumulative progress.
+		if t.Type == "quantitative" && t.Metrics.TotalTarget > 0 {
+			taskIDs = append(taskIDs, t.ID)
+		}
+	}
+
+	progressMap, err := s.aggregator.SumTaskProgressByIDs(ctx, taskIDs)
+	if err != nil {
+		return nil, fmt.Errorf("fetching cumulative progress: %w", err)
+	}
+
+	progress := make([]TaskProgress, 0, len(taskIDs))
+	for _, t := range tasks {
 		if t.Type != "quantitative" || t.Metrics.TotalTarget <= 0 {
 			continue
 		}
 
-		completed, err := s.aggregator.SumTaskProgress(ctx, t.ID)
-		if err != nil {
-			return nil, fmt.Errorf("summing progress for task %s: %w", t.ID, err)
-		}
+		completed := progressMap[t.ID]
 
 		pct := 0.0
 		if t.Metrics.TotalTarget > 0 {
@@ -175,24 +182,22 @@ func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*Migratio
 
 	// Verify cumulative progress meets or exceeds totalTarget.
 	if existing.Metrics.TotalTarget > 0 {
-		completed, err := s.aggregator.SumTaskProgress(ctx, id)
+		progressMap, err := s.aggregator.SumTaskProgressByIDs(ctx, []primitive.ObjectID{existing.ID})
 		if err != nil {
 			return nil, fmt.Errorf("checking task progress: %w", err)
 		}
+		completed := progressMap[existing.ID]
 		if completed < existing.Metrics.TotalTarget {
 			return nil, fmt.Errorf("task progress (%d/%d) has not reached the target", completed, existing.Metrics.TotalTarget)
 		}
 	}
 
-	// Archive the old task.
+	// Archive the old task in memory so it can be passed to MigrateTaskAtomic
 	existing.Status = "archived"
-	if err := s.repo.Update(ctx, existing); err != nil {
-		return nil, fmt.Errorf("archiving task for migration: %w", err)
-	}
 
 	// Create new task with the same configuration but reset progress.
 	newTask := &Task{
-		ID:      fmt.Sprintf("task_%d", time.Now().In(jst.Location()).UnixMilli()),
+		ID:      primitive.NewObjectID(),
 		Section: existing.Section,
 		Title:   existing.Title,
 		Type:    existing.Type,
@@ -204,8 +209,8 @@ func (s *TaskServiceImpl) MigrateTask(ctx context.Context, id string) (*Migratio
 		Status:     "active",
 	}
 
-	if err := s.repo.Create(ctx, newTask); err != nil {
-		return nil, fmt.Errorf("creating migrated task: %w", err)
+	if err := s.repo.MigrateTaskAtomic(ctx, existing, newTask); err != nil {
+		return nil, fmt.Errorf("atomic migration failed: %w", err)
 	}
 
 	return &MigrationResult{

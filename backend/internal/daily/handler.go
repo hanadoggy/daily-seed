@@ -62,8 +62,8 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 		return
 	}
 
-	var patch map[string]interface{}
-	if err := c.ShouldBindJSON(&patch); err != nil {
+	var req UpdateDailyRecordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "INVALID_BODY",
 			Message: "Request body must be valid JSON",
@@ -71,7 +71,7 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 		return
 	}
 
-	record, err := h.svc.UpdateDailyRecord(c.Request.Context(), date, patch)
+	record, err := h.svc.UpdateDailyRecord(c.Request.Context(), date, &req)
 	if err != nil {
 		slog.Error("failed to update daily record", slog.String("date", date), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{

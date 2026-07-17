@@ -10,6 +10,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+func testOID(hex string) primitive.ObjectID {
+	id, _ := primitive.ObjectIDFromHex(hex)
+	return id
+}
+
+var (
+	taskOID1 = testOID("000000000000000000000001")
+	taskOID2 = testOID("000000000000000000000002")
+	taskOID3 = testOID("000000000000000000000003")
 )
 
 func TestTaskService_Create(t *testing.T) {
@@ -108,7 +120,7 @@ func TestTaskService_Create(t *testing.T) {
 }
 
 func TestTaskService_Update(t *testing.T) {
-	existing := &task.Task{ID: "task_1", Status: "active"}
+	existing := &task.Task{ID: taskOID1, Status: "active"}
 
 	tests := []struct {
 		name        string
@@ -119,63 +131,63 @@ func TestTaskService_Update(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful update",
-			task: &task.Task{ID: "task_1", Title: "Read updated", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: validation error",
-			task: &task.Task{ID: "task_1", Title: "", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
 			expectError: true,
 			errContains: "title is required",
 		},
 		{
 			name: "Fail: invalid section",
-			task: &task.Task{ID: "task_1", Title: "Read", Section: "invalid_section", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "invalid_section", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
 			expectError: true,
 			errContains: "section must be one of",
 		},
 		{
 			name: "Fail: invalid type",
-			task: &task.Task{ID: "task_1", Title: "Read", Section: "dev", Type: "invalid_type"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "invalid_type"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
 			expectError: true,
 			errContains: "type must be one of",
 		},
 		{
 			name: "Fail: not found",
-			task: &task.Task{ID: "task_2", Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID2, Title: "Read", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_2").Return(nil, nil)
+				m.On("FindByID", mock.Anything, taskOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "task not found",
 		},
 		{
 			name: "Fail: find error",
-			task: &task.Task{ID: "task_1", Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding task",
 		},
 		{
 			name: "Fail: update error",
-			task: &task.Task{ID: "task_1", Title: "Read", Section: "dev", Type: "boolean"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean"},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
@@ -206,7 +218,7 @@ func TestTaskService_Update(t *testing.T) {
 }
 
 func TestTaskService_Archive(t *testing.T) {
-	existing := &task.Task{ID: "task_1", Status: "active"}
+	existing := &task.Task{ID: taskOID1, Status: "active"}
 
 	tests := []struct {
 		name        string
@@ -217,38 +229,38 @@ func TestTaskService_Archive(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful archive",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.MatchedBy(func(task *task.Task) bool {
-					return task.ID == "task_1" && task.Status == "archived"
+					return task.ID == taskOID1 && task.Status == "archived"
 				})).Return(nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: not found",
-			id:   "task_2",
+			id:   taskOID2.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_2").Return(nil, nil)
+				m.On("FindByID", mock.Anything, taskOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "task not found",
 		},
 		{
 			name: "Fail: find error",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding task",
 		},
 		{
 			name: "Fail: update error",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
@@ -277,7 +289,7 @@ func TestTaskService_Archive(t *testing.T) {
 }
 
 func TestTaskService_Get(t *testing.T) {
-	existing := &task.Task{ID: "task_1", Title: "Read"}
+	existing := &task.Task{ID: taskOID1, Title: "Read"}
 
 	tests := []struct {
 		name        string
@@ -288,26 +300,26 @@ func TestTaskService_Get(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful get",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
 			expectError: false,
 		},
 		{
 			name: "Fail: not found",
-			id:   "task_2",
+			id:   taskOID2.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_2").Return(nil, nil)
+				m.On("FindByID", mock.Anything, taskOID2.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "task not found",
 		},
 		{
 			name: "Fail: find error",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, "task_1").Return(nil, errors.New("db error"))
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "finding task",
@@ -345,7 +357,7 @@ func TestTaskService_List(t *testing.T) {
 		{
 			name: "Pass: successful list",
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindAll", mock.Anything).Return([]task.Task{{ID: "1"}}, nil)
+				m.On("FindAll", mock.Anything).Return([]task.Task{{ID: taskOID1}}, nil)
 			},
 			expectError: false,
 		},
@@ -388,12 +400,14 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			name: "Pass: returns progress for quantitative tasks with totalTarget",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
-					{ID: "task_1", Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
-					{ID: "task_2", Title: "Read News", Type: "boolean", Metrics: task.TaskMetrics{DailyTarget: 1}},
-					{ID: "task_3", Title: "LeetCode", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
+					{ID: taskOID1, Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+					{ID: taskOID2, Title: "Read News", Type: "boolean", Metrics: task.TaskMetrics{DailyTarget: 1}},
+					{ID: taskOID3, Title: "LeetCode", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
 				}, nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(250, nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_3").Return(50, nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1, taskOID3}).Return(map[primitive.ObjectID]int{
+					taskOID1: 250,
+					taskOID3: 50,
+				}, nil)
 			},
 			expectedResults: 2,
 		},
@@ -401,8 +415,8 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			name: "Pass: skips quantitative tasks with zero totalTarget",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
-					{ID: "task_1", Title: "Kanji", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 0}},
 				}, nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{}).Return(map[primitive.ObjectID]int{}, nil)
 			},
 			expectedResults: 0,
 		},
@@ -417,9 +431,9 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 			name: "Fail: aggregator error",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
-					{ID: "task_1", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
+					{ID: taskOID1, Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
 				}, nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(0, errors.New("agg error"))
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return((map[primitive.ObjectID]int)(nil), errors.New("agg error"))
 			},
 			expectError: true,
 		},
@@ -449,7 +463,7 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 func TestTaskService_MigrateTask(t *testing.T) {
 	newActiveTask := func() *task.Task {
 		return &task.Task{
-			ID:         "task_1",
+			ID:         taskOID1,
 			Section:    "dev",
 			Title:      "LeetCode",
 			Type:       "quantitative",
@@ -468,88 +482,74 @@ func TestTaskService_MigrateTask(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful migration",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
-				repo.On("Update", mock.Anything, mock.MatchedBy(func(t *task.Task) bool {
-					return t.ID == "task_1" && t.Status == "archived"
-				})).Return(nil)
-				repo.On("Create", mock.Anything, mock.MatchedBy(func(t *task.Task) bool {
+				repo.On("FindByID", mock.Anything, taskOID1.Hex()).Return(newActiveTask(), nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return(map[primitive.ObjectID]int{taskOID1: 100}, nil)
+				repo.On("MigrateTaskAtomic", mock.Anything, mock.MatchedBy(func(t *task.Task) bool {
+					return t.ID == taskOID1 && t.Status == "archived"
+				}), mock.MatchedBy(func(t *task.Task) bool {
 					return t.Status == "active" && t.Title == "LeetCode" && t.Section == "dev"
 				})).Return(nil)
 			},
 		},
 		{
 			name: "Fail: task not found",
-			id:   "task_999",
+			id:   taskOID3.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_999").Return(nil, nil)
+				repo.On("FindByID", mock.Anything, taskOID3.Hex()).Return(nil, nil)
 			},
 			expectError: true,
 			errContains: "task not found",
 		},
 		{
 			name: "Fail: non-active task",
-			id:   "task_2",
+			id:   taskOID2.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_2").Return(&task.Task{ID: "task_2", Status: "archived"}, nil)
+				repo.On("FindByID", mock.Anything, taskOID2.Hex()).Return(&task.Task{ID: taskOID2, Status: "archived"}, nil)
 			},
 			expectError: true,
 			errContains: "non-active",
 		},
 		{
 			name: "Fail: progress not reached",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(50, nil)
+				repo.On("FindByID", mock.Anything, taskOID1.Hex()).Return(newActiveTask(), nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return(map[primitive.ObjectID]int{taskOID1: 50}, nil)
 			},
 			expectError: true,
 			errContains: "has not reached the target",
 		},
 		{
 			name: "Pass: allows overshooting (>100%)",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(150, nil)
-				repo.On("Update", mock.Anything, mock.Anything).Return(nil)
-				repo.On("Create", mock.Anything, mock.Anything).Return(nil)
+				repo.On("FindByID", mock.Anything, taskOID1.Hex()).Return(newActiveTask(), nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return(map[primitive.ObjectID]int{taskOID1: 150}, nil)
+				repo.On("MigrateTaskAtomic", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 			},
 		},
 		{
 			name: "Fail: aggregator error",
-			id:   "task_1",
+			id:   taskOID1.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(0, errors.New("agg error"))
+				repo.On("FindByID", mock.Anything, taskOID1.Hex()).Return(newActiveTask(), nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return((map[primitive.ObjectID]int)(nil), errors.New("agg error"))
 			},
 			expectError: true,
 			errContains: "checking task progress",
 		},
 		{
-			name: "Fail: Update (archive old) fails",
-			id:   "task_1",
+			name: "Fail: atomic migration fails",
+			id:   taskOID1.Hex(),
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
-				repo.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
+				repo.On("FindByID", mock.Anything, taskOID1.Hex()).Return(newActiveTask(), nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return(map[primitive.ObjectID]int{taskOID1: 100}, nil)
+				repo.On("MigrateTaskAtomic", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
-			errContains: "archiving task for migration",
-		},
-		{
-			name: "Fail: Create (new task) fails",
-			id:   "task_1",
-			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
-				repo.On("FindByID", mock.Anything, "task_1").Return(newActiveTask(), nil)
-				agg.On("SumTaskProgress", mock.Anything, "task_1").Return(100, nil)
-				repo.On("Update", mock.Anything, mock.Anything).Return(nil)
-				repo.On("Create", mock.Anything, mock.Anything).Return(errors.New("db error"))
-			},
-			expectError: true,
-			errContains: "creating migrated task",
+			errContains: "atomic migration failed",
 		},
 	}
 
