@@ -131,7 +131,7 @@ func TestTaskService_Update(t *testing.T) {
 	}{
 		{
 			name: "Pass: successful update",
-			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
+			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
@@ -149,7 +149,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: invalid section",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "invalid_section", Type: "boolean", StartDate: "2026-07-17"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "invalid_section", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
@@ -158,7 +158,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: invalid type",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "invalid_type"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "invalid_type", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 			},
@@ -176,7 +176,7 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: find error",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(nil, errors.New("db error"))
 			},
@@ -185,13 +185,31 @@ func TestTaskService_Update(t *testing.T) {
 		},
 		{
 			name: "Fail: update error",
-			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17"},
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
 				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
 				m.On("Update", mock.Anything, mock.Anything).Return(errors.New("db error"))
 			},
 			expectError: true,
 			errContains: "updating task",
+		},
+		{
+			name: "Fail: missing weather condition",
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{}, Mode: []string{"Growth"}}},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+			},
+			expectError: true,
+			errContains: "at least one weather condition is required",
+		},
+		{
+			name: "Fail: invalid mode value",
+			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "boolean", StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"invalid"}}},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+			},
+			expectError: true,
+			errContains: "invalid mode value",
 		},
 	}
 
@@ -469,7 +487,7 @@ func TestTaskService_MigrateTask(t *testing.T) {
 			Type:       "quantitative",
 			Status:     "active",
 			Metrics:    task.TaskMetrics{DailyTarget: 3, TotalTarget: 100},
-			Conditions: task.TaskConditions{Weather: "any", Mode: "any"},
+			Conditions: task.TaskConditions{Weather: []string{"sunny", "rainy"}, Mode: []string{"Growth", "Rest", "Office", "Remote"}},
 		}
 	}
 

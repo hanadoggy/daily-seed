@@ -19,8 +19,8 @@ export interface MigrationResult {
 }
 
 export interface TaskConditions {
-  weather: 'sunny' | 'rainy' | 'any';
-  mode: string;
+  weather: string[];
+  mode: string[];
 }
 
 export interface Task {

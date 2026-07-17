@@ -25,8 +25,8 @@ type TaskMetrics struct {
 }
 
 type TaskConditions struct {
-	Weather string `json:"weather" bson:"weather"` // "any" | "sunny" | "rainy"
-	Mode    string `json:"mode" bson:"mode"`       // "any" | "Growth" | "Rest" | "Office" | "Remote"
+	Weather []string `json:"weather" bson:"weather"` // ["sunny", "rainy"]
+	Mode    []string `json:"mode" bson:"mode"`       // ["Growth", "Rest", "Office", "Remote"]
 }
 
 // TaskProgress represents a task's cumulative progress across all daily records.

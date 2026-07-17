@@ -49,6 +49,9 @@ var validTaskTypes = map[string]bool{
 	"boolean":      true,
 }
 
+var validWeathers = map[string]bool{"sunny": true, "rainy": true}
+var validModes = map[string]bool{"Growth": true, "Rest": true, "Office": true, "Remote": true}
+
 func validateTask(task *Task) error {
 	if strings.TrimSpace(task.Title) == "" {
 		return fmt.Errorf("title is required")
@@ -68,28 +71,46 @@ func validateTask(task *Task) error {
 	if task.StartDate == "" {
 		return fmt.Errorf("startDate is required")
 	}
+
+	if len(task.Conditions.Weather) == 0 {
+		return fmt.Errorf("at least one weather condition is required")
+	}
+	if len(task.Conditions.Mode) == 0 {
+		return fmt.Errorf("at least one mode condition is required")
+	}
+	for _, w := range task.Conditions.Weather {
+		if !validWeathers[w] {
+			return fmt.Errorf("invalid weather value: %s", w)
+		}
+	}
+	for _, m := range task.Conditions.Mode {
+		if !validModes[m] {
+			return fmt.Errorf("invalid mode value: %s", m)
+		}
+	}
+
 	return nil
 }
 
 func (s *TaskServiceImpl) Create(ctx context.Context, task *Task) (*Task, error) {
+	// Default conditions if not provided.
+	if len(task.Conditions.Weather) == 0 {
+		task.Conditions.Weather = []string{"sunny", "rainy"}
+	}
+	if len(task.Conditions.Mode) == 0 {
+		task.Conditions.Mode = []string{"Growth", "Rest", "Office", "Remote"}
+	}
+	// Boolean tasks always have dailyTarget = 1.
+	if task.Type == "boolean" {
+		task.Metrics.DailyTarget = 1
+	}
+
 	if err := validateTask(task); err != nil {
 		return nil, err
 	}
 
 	task.ID = primitive.NewObjectID()
 	task.Status = "active"
-
-	// Default conditions if not provided.
-	if task.Conditions.Weather == "" {
-		task.Conditions.Weather = "any"
-	}
-	if task.Conditions.Mode == "" {
-		task.Conditions.Mode = "any"
-	}
-	// Boolean tasks always have dailyTarget = 1.
-	if task.Type == "boolean" {
-		task.Metrics.DailyTarget = 1
-	}
 
 	if err := s.repo.Create(ctx, task); err != nil {
 		return nil, fmt.Errorf("creating task: %w", err)

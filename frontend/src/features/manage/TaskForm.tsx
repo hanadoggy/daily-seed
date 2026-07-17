@@ -1,7 +1,10 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { Task } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions';
 
 const SECTION_OPTIONS = [
   { value: 'japanese', label: '🇯🇵 Japanese' },
@@ -26,10 +29,34 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [type, setType] = useState<string>(task?.type ?? 'quantitative');
   const [dailyTarget, setDailyTarget] = useState(task?.metrics.dailyTarget ?? 1);
   const [totalTarget, setTotalTarget] = useState(task?.metrics.totalTarget ?? 0);
-  const [weather, setWeather] = useState<Task['conditions']['weather']>(task?.conditions.weather ?? 'any');
-  const [mode, setMode] = useState<string>(task?.conditions.mode ?? 'any');
+  const [weather, setWeather] = useState<string[]>(task?.conditions.weather ?? ['sunny', 'rainy']);
+  const [mode, setMode] = useState<string[]>(task?.conditions.mode ?? ['Growth', 'Rest', 'Office', 'Remote']);
   const [startDate, setStartDate] = useState<string>(task?.startDate ?? selectedDate);
   const [submitting, setSubmitting] = useState(false);
+
+  const toggleWeather = (val: string) => {
+    if (weather.includes(val)) {
+      if (weather.length <= 1) {
+        toast.error("최소 1개의 옵션을 선택해야 합니다", { duration: 5000 });
+        return;
+      }
+      setWeather(weather.filter((w) => w !== val));
+    } else {
+      setWeather([...weather, val]);
+    }
+  };
+
+  const toggleMode = (val: string) => {
+    if (mode.includes(val)) {
+      if (mode.length <= 1) {
+        toast.error("최소 1개의 옵션을 선택해야 합니다", { duration: 5000 });
+        return;
+      }
+      setMode(mode.filter((m) => m !== val));
+    } else {
+      setMode([...mode, val]);
+    }
+  };
 
   const isEditing = !!task;
 
@@ -142,37 +169,60 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <label htmlFor="task-weather" className="text-xs font-medium text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
             Weather Condition
           </label>
-          <select
-            id="task-weather"
-            value={weather}
-            onChange={(e) => setWeather(e.target.value as any)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
-          >
-            <option value="any">Any Weather</option>
-            <option value="sunny">Sunny ☀️</option>
-            <option value="rainy">Rainy 🌧️</option>
-          </select>
+          <div className="flex gap-2">
+            {WEATHER_OPTIONS.map(({ value, label, icon: Icon, color }) => {
+              const isActive = weather.includes(value);
+              return (
+                <Button
+                  key={value}
+                  type="button"
+                  variant="outline"
+                  onClick={() => toggleWeather(value)}
+                  className={cn(
+                    'flex-1 gap-2 transition-all duration-300 border',
+                    isActive
+                      ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
+                  )}
+                >
+                  <Icon className={cn('h-4 w-4', isActive && color)} />
+                  <span className="text-sm font-medium">{label}</span>
+                </Button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="task-mode" className="text-xs font-medium text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground">
             Context Mode
           </label>
-          <select
-            id="task-mode"
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
-          >
-            <option value="any">Any Mode</option>
-            <option value="Growth">Growth 🌱</option>
-            <option value="Rest">Rest ☕️</option>
-            <option value="Office">Office 🏢</option>
-            <option value="Remote">Remote 🏠</option>
-          </select>
+          <div className="flex gap-2 flex-wrap">
+            {MODE_OPTIONS.map(({ value, label, icon: Icon, color }) => {
+              const isActive = mode.includes(value);
+              return (
+                <Button
+                  key={value}
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => toggleMode(value)}
+                  className={cn(
+                    'transition-all duration-300 border h-9 w-12',
+                    isActive
+                      ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
+                      : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
+                  )}
+                  title={label}
+                >
+                  <Icon className={cn('h-4 w-4', isActive && color)} />
+                </Button>
+              );
+            })}
+          </div>
         </div>
       </div>
 

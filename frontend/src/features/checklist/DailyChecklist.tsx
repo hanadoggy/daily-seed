@@ -47,12 +47,10 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
     const task = taskMap.get(entry.taskId);
     if (!task) continue;
 
-    const taskMode = task.conditions.mode;
-    const taskWeather = task.conditions.weather;
     const { currentMode, currentWeather } = useAppStore.getState();
 
-    if (taskMode !== 'any' && taskMode !== currentMode) continue;
-    if (taskWeather !== 'any' && taskWeather !== currentWeather) continue;
+    if (!task.conditions.mode.includes(currentMode)) continue;
+    if (!task.conditions.weather.includes(currentWeather)) continue;
 
     const section = task.section ?? 'other';
     const existing = tasksBySection.get(section) ?? [];
