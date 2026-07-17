@@ -61,35 +61,16 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 - When performing optimistic updates, always implement rollback logic on API failure.
 - Clearly separate UI-only state and server-synced data in the store.
 
-## MongoDB Guidelines
-
-- Use the three-collection structure (Habits, Tasks, DailyRecords) as defined in the tech design.
-- The `_id` of `DailyRecords` must be a `YYYY-MM-DD` string in JST.
-- When updating a `DailyRecord`, prefer atomic operations (`$set`, `$push`, etc.) when possible.
-- Do not embed large or frequently changing master data inside `DailyRecords`. Use references (`taskId`, `habitId`) instead.
-- When archiving tasks (status change), keep historical `DailyRecords` intact. Do not delete past records.
-
 ## Edge Cases, Concurrency & Validation
 
-- **Concurrency:** Handle potential race conditions gracefully. For instance, ensure a user cannot trigger "Task Migration" twice for the same task simultaneously (e.g., using optimistic locking or state checks before updating).
+- **Concurrency:** Handle potential race conditions gracefully. For instance, ensure a user cannot trigger the same action twice simultaneously (e.g., using optimistic locking or state checks before updating).
 - **Validation:** Always validate incoming API requests. Use `Zod` for TypeScript and `go-playground/validator` for Go to enforce strict input boundaries.
-
-## Task Migration Rules
-
-- Task migration (when progress reaches 100%) must be handled **atomically on the backend**.
-- The migration endpoint should:
-  1. Set the old task's `status` to `archived` in the Tasks collection.
-  2. Create a new task with `status: active`.
-  3. Return the updated state so the frontend can refresh cleanly.
-- Never perform partial migration (e.g., only updating DailyRecord without updating the master Tasks collection).
-- Always validate that the task being migrated actually belongs to the user (even if auth is not implemented yet).
 
 ## Project Conventions
 
-- All date-related operations must use **Asia/Tokyo** timezone.
-- Use `YYYY-MM-DD` string format for date fields in the database.
 - Follow the error response format: `{ code, message, details }`.
 - When modifying existing code, try to maintain consistency with surrounding code style unless there is a clear reason to improve it.
+
 
 ## Final Mindset
 
