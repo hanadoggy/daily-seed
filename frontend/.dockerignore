@@ -1,0 +1,20 @@
+# dependencies and packages
+node_modules
+.pnpm-store
+pnpm-debug.log
+
+# build
+dist
+build
+
+# local config and cache files
+.env*.local
+.parcel-cache
+.eslintcache
+.tsbuildinfo
+
+# system and git files
+.git
+.gitignore
+.DS_Store
+Thumbs.db
