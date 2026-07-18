@@ -42,6 +42,8 @@
     --color-background: hsl(var(--background));
     --color-save: hsl(var(--save));
     --color-cancel: hsl(var(--cancel));
+    --color-cal-sat: hsl(var(--cal-sat));
+    --color-cal-sun: hsl(var(--cal-sun));
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -86,6 +88,8 @@
     --sidebar-ring: oklch(0.708 0 0);
     --save: 151 60% 38%;
     --cancel: 34 78% 52%;
+    --cal-sat: 210 100% 60%;
+    --cal-sun: 0 100% 65%;
 }
 
 .dark {
@@ -122,6 +126,8 @@
     --sidebar-ring: oklch(0.556 0 0);
     --save: 151 60% 38%;
     --cancel: 34 78% 52%;
+    --cal-sat: 210 100% 70%;
+    --cal-sun: 0 100% 75%;
 }
 
 .british {
@@ -158,6 +164,8 @@
     --sidebar-ring: oklch(0.556 0 0);
     --save: 151 60% 38%;
     --cancel: 34 78% 52%;
+    --cal-sat: 210 80% 65%;
+    --cal-sun: 0 80% 70%;
 }
 
 @layer base {

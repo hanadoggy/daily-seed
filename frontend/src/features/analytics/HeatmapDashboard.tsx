@@ -87,7 +87,7 @@ export function HeatmapDashboard({ data, isLoading }: HeatmapDashboardProps) {
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
                 activeFilter === f.value
-                  ? 'bg-background text-foreground shadow-sm'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >

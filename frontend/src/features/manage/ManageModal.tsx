@@ -53,7 +53,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+      <DialogContent className="max-w-3xl h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
           <DialogTitle className="text-base font-semibold">Manage</DialogTitle>
@@ -122,7 +122,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                       className={cn(
                         'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
                         taskFilter === 'active'
-                          ? 'bg-background text-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >
@@ -133,7 +133,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                       className={cn(
                         'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
                         taskFilter === 'archived'
-                          ? 'bg-background text-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                       )}
                     >
@@ -174,11 +174,11 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                   {filteredTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-mode-accent/30 shadow-sm"
+                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-5 transition-colors hover:border-mode-accent/30 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-base font-medium">{task.title}</p>
-                        <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <span>{SECTION_LABELS[task.section] ?? task.section}</span>
                             <span>·</span>
@@ -271,11 +271,11 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                     return (
                     <div
                       key={habit.id}
-                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-mode-accent/30 shadow-sm"
+                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-5 transition-colors hover:border-mode-accent/30 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-base font-medium">{habit.title}</p>
-                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground capitalize">
+                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground capitalize">
                           {CategoryIcon && <CategoryIcon className={cn('h-4 w-4', categoryOption.color)} />}
                           <span>{habit.category}</span>
                         </div>

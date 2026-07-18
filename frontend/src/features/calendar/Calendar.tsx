@@ -5,7 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { dayjsJST, todayJST } from '@/lib/dayjs';
 import { cn } from '@/lib/utils';
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function Calendar() {
   const { selectedDate, setDateAndFetch } = useAppStore();
@@ -20,8 +20,8 @@ export function Calendar() {
   const month = viewMonth.month();
   const daysInMonth = viewMonth.daysInMonth();
 
-  // Monday=0 based: startOf('month').day() returns 0=Sun, so adjust
-  const firstDayOfWeek = (viewMonth.day() + 6) % 7; // Mon=0
+  // Sunday=0 based: startOf('month').day() returns 0=Sun
+  const firstDayOfWeek = viewMonth.day(); // Sun=0
 
   const prevMonth = () => setViewMonth(viewMonth.subtract(1, 'month'));
   const nextMonth = () => setViewMonth(viewMonth.add(1, 'month'));
@@ -55,7 +55,10 @@ export function Calendar() {
         {WEEKDAY_LABELS.map((label) => (
           <div
             key={label}
-            className="text-center text-[11px] font-medium text-muted-foreground py-1"
+            className={cn(
+              "text-center text-[11px] font-medium py-1",
+              label === 'Sat' ? 'text-cal-sat' : label === 'Sun' ? 'text-cal-sun' : 'text-muted-foreground'
+            )}
           >
             {label}
           </div>
@@ -83,6 +86,8 @@ export function Calendar() {
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isSelected && 'bg-mode-accent text-white shadow-md hover:bg-mode-accent',
                 !isSelected && isToday && 'ring-1 ring-mode-accent text-mode-accent',
+                !isSelected && !isToday && i % 7 === 6 && 'text-cal-sat',
+                !isSelected && !isToday && i % 7 === 0 && 'text-cal-sun',
               )}
             >
               {day}

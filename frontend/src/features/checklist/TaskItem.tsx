@@ -74,7 +74,7 @@ export function TaskItem({ entry, title, type }: TaskItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-lg"
+            className="h-7 w-7 rounded-lg text-cancel hover:bg-cancel/10 hover:text-cancel"
             onClick={() => updateTaskProgress(entry.taskId, entry.actualAmount - 1)}
             disabled={entry.actualAmount <= 0}
           >
@@ -86,7 +86,7 @@ export function TaskItem({ entry, title, type }: TaskItemProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 rounded-lg"
+            className="h-7 w-7 rounded-lg text-save hover:bg-save/10 hover:text-save"
             onClick={() => updateTaskProgress(entry.taskId, entry.actualAmount + 1)}
             disabled={entry.actualAmount >= entry.targetAmount}
           >
