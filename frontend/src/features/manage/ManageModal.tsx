@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Plus, Pencil, Trash2, ListTodo, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, ListTodo, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useAppStore } from '@/store/useAppStore';
 import { TaskForm } from './TaskForm';
 import { HabitForm } from './HabitForm';
@@ -24,11 +25,12 @@ const SECTION_LABELS: Record<string, string> = {
   exercise: '🏋️ Exercise',
 };
 
-interface ManagePanelProps {
-  onClose: () => void;
+interface ManageModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function ManagePanel({ onClose }: ManagePanelProps) {
+export function ManageModal({ open, onOpenChange }: ManageModalProps) {
   const { tasks, habits, archiveTask, archiveHabit } = useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [formState, setFormState] = useState<FormState>({ mode: 'closed' });
@@ -54,38 +56,29 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
   const showingForm = formState.mode !== 'closed';
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl animate-in slide-in-from-right duration-300">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold">Manage</h2>
-          <Button variant="ghost" size="icon-sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center justify-between border-b border-border px-5 py-4 shrink-0">
+          <DialogTitle className="text-base font-semibold">Manage</DialogTitle>
+          {/* X button is provided by DialogContent */}
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-border shrink-0">
           <button
             onClick={() => {
               setActiveTab('tasks');
               setFormState({ mode: 'closed' });
               setConfirmingTaskId(null);
             }}
-            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'tasks'
                 ? 'border-b-2 border-mode-accent text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <ListTodo className="h-3.5 w-3.5" />
+            <ListTodo className="h-4 w-4" />
             Tasks ({activeTasks.length})
           </button>
           <button
@@ -94,21 +87,21 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
               setFormState({ mode: 'closed' });
               setConfirmingHabitId(null);
             }}
-            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors ${
+            className={`flex flex-1 items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === 'habits'
                 ? 'border-b-2 border-mode-accent text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-4 w-4" />
             Habits ({activeHabits.length})
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {showingForm ? (
-            <div className="rounded-xl border border-border bg-background p-4">
+            <div className="rounded-xl border border-border bg-muted/30 p-5">
               {(formState.mode === 'create-task' || formState.mode === 'edit-task') && (
                 <TaskForm
                   task={formState.mode === 'edit-task' ? formState.task : undefined}
@@ -126,12 +119,12 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             <>
               {/* Add button / Toggle */}
               {activeTab === 'tasks' ? (
-                <div className="mb-4 flex items-center justify-between gap-2">
+                <div className="mb-5 flex items-center justify-between gap-2">
                   <div className="flex rounded-lg border border-border bg-muted/50 p-1">
                     <button
                       onClick={() => setTaskFilter('active')}
                       className={cn(
-                        'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                        'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
                         taskFilter === 'active'
                           ? 'bg-background text-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
@@ -142,7 +135,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                     <button
                       onClick={() => setTaskFilter('archived')}
                       className={cn(
-                        'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                        'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
                         taskFilter === 'archived'
                           ? 'bg-background text-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
@@ -158,7 +151,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                       className="gap-1.5"
                       onClick={() => setFormState({ mode: 'create-task' })}
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Plus className="h-4 w-4" />
                       Add Task
                     </Button>
                   )}
@@ -166,30 +159,30 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
               ) : (
                 <Button
                   variant="outline"
-                  className="mb-4 w-full gap-1.5"
+                  className="mb-5 w-full gap-1.5 py-5"
                   onClick={() => setFormState({ mode: 'create-habit' })}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   Add Habit
                 </Button>
               )}
 
               {/* List */}
               {activeTab === 'tasks' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {filteredTasks.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
+                    <p className="py-12 text-center text-sm text-muted-foreground">
                       No {taskFilter} tasks yet.
                     </p>
                   )}
                   {filteredTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
+                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-mode-accent/30 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{task.title}</p>
-                        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                        <p className="truncate text-base font-medium">{task.title}</p>
+                        <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <span>{SECTION_LABELS[task.section] ?? task.section}</span>
                             <span>·</span>
@@ -205,28 +198,28 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                               </>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             {WEATHER_OPTIONS.map((opt) => {
                               if (!task.conditions.weather.includes(opt.value)) return null;
-                              return <opt.icon key={opt.value} className={cn('h-3.5 w-3.5', opt.color)} title={opt.label} />;
+                              return <opt.icon key={opt.value} className={cn('h-4 w-4', opt.color)} title={opt.label} />;
                             })}
                             <div className="mx-1 h-3 w-px bg-border" />
                             {MODE_OPTIONS.map((opt) => {
                               if (!task.conditions.mode.includes(opt.value)) return null;
-                              return <opt.icon key={opt.value} className={cn('h-3.5 w-3.5', opt.color)} title={opt.label} />;
+                              return <opt.icon key={opt.value} className={cn('h-4 w-4', opt.color)} title={opt.label} />;
                             })}
                           </div>
                         </div>
                       </div>
                       {task.status === 'active' && (
-                        <div className={`flex gap-1 transition-opacity ml-2 ${confirmingTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                        <div className={`flex gap-1.5 transition-opacity ml-3 ${confirmingTaskId === task.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                           {confirmingTaskId === task.id ? (
-                            <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
-                              <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                            <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1">
+                              <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
                               <Button
                                 variant="ghost"
-                                size="icon-xs"
-                                className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                                size="icon-sm"
+                                className="h-7 w-7 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
                                 onClick={() => {
                                   archiveTask(task.id);
                                   setConfirmingTaskId(null);
@@ -236,8 +229,8 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="icon-xs"
-                                className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                                size="icon-sm"
+                                className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
                                 onClick={() => setConfirmingTaskId(null)}
                               >
                                 ❌
@@ -247,17 +240,17 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                             <>
                               <Button
                                 variant="ghost"
-                                size="icon-xs"
+                                size="icon-sm"
                                 onClick={() => setFormState({ mode: 'edit-task', task })}
                               >
-                                <Pencil className="h-3 w-3" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="destructive"
-                                size="icon-xs"
+                                size="icon-sm"
                                 onClick={() => setConfirmingTaskId(task.id)}
                               >
-                                <Trash2 className="h-3 w-3" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </>
                           )}
@@ -269,9 +262,9 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
               )}
 
               {activeTab === 'habits' && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {activeHabits.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
+                    <p className="py-12 text-center text-sm text-muted-foreground">
                       No active habits yet. Create one to get started.
                     </p>
                   )}
@@ -282,23 +275,23 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                     return (
                     <div
                       key={habit.id}
-                      className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
+                      className="group flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-mode-accent/30 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{habit.title}</p>
-                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
-                          {CategoryIcon && <CategoryIcon className={cn('h-3.5 w-3.5', categoryOption.color)} />}
+                        <p className="truncate text-base font-medium">{habit.title}</p>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground capitalize">
+                          {CategoryIcon && <CategoryIcon className={cn('h-4 w-4', categoryOption.color)} />}
                           <span>{habit.category}</span>
                         </div>
                       </div>
-                      <div className={`flex gap-1 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <div className={`flex gap-1.5 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         {confirmingHabitId === habit.id ? (
-                          <div className="flex items-center gap-1 rounded-md bg-muted/50 px-1">
-                            <span className="mr-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                          <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1">
+                            <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
                             <Button
                               variant="ghost"
-                              size="icon-xs"
-                              className="h-6 w-6 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                              size="icon-sm"
+                              className="h-7 w-7 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
                               onClick={() => {
                                 archiveHabit(habit.id);
                                 setConfirmingHabitId(null);
@@ -308,8 +301,8 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                             </Button>
                             <Button
                               variant="ghost"
-                              size="icon-xs"
-                              className="h-6 w-6 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                              size="icon-sm"
+                              className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
                               onClick={() => setConfirmingHabitId(null)}
                             >
                               ❌
@@ -319,17 +312,17 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                           <>
                             <Button
                               variant="ghost"
-                              size="icon-xs"
+                              size="icon-sm"
                               onClick={() => setFormState({ mode: 'edit-habit', habit })}
                             >
-                              <Pencil className="h-3 w-3" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="destructive"
-                              size="icon-xs"
+                              size="icon-sm"
                               onClick={() => setConfirmingHabitId(habit.id)}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </>
                         )}
@@ -341,7 +334,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

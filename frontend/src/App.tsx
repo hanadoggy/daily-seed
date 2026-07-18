@@ -7,7 +7,7 @@ import { DailyChecklist } from '@/features/checklist/DailyChecklist';
 import { JournalSection } from '@/features/journal/JournalSection';
 import { ProgressTracker } from '@/features/progress/ProgressTracker';
 import { AutoMigrationPrompt } from '@/features/progress/AutoMigrationPrompt';
-import { ManagePanel } from '@/features/manage/ManagePanel';
+import { ManageModal } from '@/features/manage/ManageModal';
 import { useAppStore } from '@/store/useAppStore';
 import { todayJST } from '@/lib/dayjs';
 import { cn } from '@/lib/utils';
@@ -120,7 +120,7 @@ function App() {
       </div>
 
       {/* Management Panel */}
-      {showManage && <ManagePanel onClose={() => setShowManage(false)} />}
+      <ManageModal open={showManage} onOpenChange={setShowManage} />
       <AutoMigrationPrompt />
     </div>
   );
