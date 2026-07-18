@@ -37,11 +37,35 @@ describe('TaskItem', () => {
     expect(mockUpdateTaskProgressOptimistic).toHaveBeenCalledWith('t2', 4);
   });
 
-  it('disables plus button when actualAmount reaches targetAmount', () => {
+  it('does not disable plus button when actualAmount reaches targetAmount (allows exceeding)', () => {
     const entry = { taskId: 't2', targetAmount: 10, actualAmount: 10, isCompleted: true };
     render(<TaskItem entry={entry} title="Pages Read" type="quantitative" />);
     
     const buttons = screen.getAllByRole('button');
-    expect((buttons[1] as HTMLButtonElement).disabled).toBe(true); // Plus button
+    expect((buttons[1] as HTMLButtonElement).disabled).toBe(false); // Plus button
+  });
+
+  it('hides plus and minus buttons when isReadOnly is true', () => {
+    const entry = { taskId: 't3', targetAmount: 10, actualAmount: 5, isCompleted: false };
+    render(<TaskItem entry={entry} title="Pages Read" type="quantitative" isReadOnly={true} />);
+    
+    const buttons = screen.queryAllByRole('button');
+    expect(buttons.length).toBe(0);
+  });
+
+  it('hides plus and minus buttons when isArchived is true', () => {
+    const entry = { taskId: 't4', targetAmount: 10, actualAmount: 5, isCompleted: false };
+    render(<TaskItem entry={entry} title="Pages Read" type="quantitative" isArchived={true} />);
+    
+    const buttons = screen.queryAllByRole('button');
+    expect(buttons.length).toBe(0);
+  });
+
+  it('disables boolean checkbox when isReadOnly is true', () => {
+    const entry = { taskId: 't5', targetAmount: 1, actualAmount: 0, isCompleted: false };
+    render(<TaskItem entry={entry} title="Read Book" type="boolean" isReadOnly={true} />);
+    
+    const btn = screen.getByRole('button');
+    expect((btn as HTMLButtonElement).disabled).toBe(true);
   });
 });

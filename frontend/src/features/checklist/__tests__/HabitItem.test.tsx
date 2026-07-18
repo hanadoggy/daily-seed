@@ -34,4 +34,13 @@ describe('HabitItem', () => {
     const button = screen.getByRole('button');
     expect(button.className).toContain('border-mode-accent');
   });
+
+  it('disables button and ignores clicks when isReadOnly is true', () => {
+    render(<HabitItem entry={entry} title="Drink Water" category="Health" isReadOnly={true} />);
+    const button = screen.getByRole('button');
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+    
+    fireEvent.click(button);
+    expect(mockToggleHabit).not.toHaveBeenCalled();
+  });
 });
