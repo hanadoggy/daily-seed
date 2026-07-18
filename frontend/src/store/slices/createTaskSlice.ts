@@ -42,7 +42,10 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
 
   archiveTask: async (id) => {
     const previous = get().tasks;
-    set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+    const today = new Date().toISOString().split('T')[0];
+    set((state) => ({
+      tasks: state.tasks.map((t) => (t.id === id ? { ...t, status: 'archived', endDate: today } : t)),
+    }));
     try {
       await apiDeleteTask(id);
       get().setDateAndFetch(get().selectedDate);

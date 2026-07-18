@@ -120,7 +120,7 @@ func TestTaskService_Create(t *testing.T) {
 }
 
 func TestTaskService_Update(t *testing.T) {
-	existing := &task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17"}
+	existing := &task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17", Type: "boolean"}
 
 	tests := []struct {
 		name        string
@@ -137,6 +137,15 @@ func TestTaskService_Update(t *testing.T) {
 				m.On("Update", mock.Anything, mock.AnythingOfType("*task.Task")).Return(nil)
 			},
 			expectError: false,
+		},
+		{
+			name: "Fail: task type changed",
+			task: &task.Task{ID: taskOID1, Title: "Read updated", Section: "dev", Type: "quantitative", Metrics: task.TaskMetrics{DailyTarget: 10}, StartDate: "2026-07-17", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
+			mockSetup: func(m *task.MockTaskRepository) {
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+			},
+			expectError: true,
+			errContains: "task type cannot be changed after creation",
 		},
 		{
 			name: "Fail: validation error",
@@ -160,7 +169,7 @@ func TestTaskService_Update(t *testing.T) {
 			name: "Fail: invalid type",
 			task: &task.Task{ID: taskOID1, Title: "Read", Section: "dev", Type: "invalid_type", Conditions: task.TaskConditions{Weather: []string{"sunny"}, Mode: []string{"Growth"}}},
 			mockSetup: func(m *task.MockTaskRepository) {
-				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(existing, nil)
+				m.On("FindByID", mock.Anything, taskOID1.Hex()).Return(&task.Task{ID: taskOID1, Status: "active", StartDate: "2026-07-17", Type: "invalid_type"}, nil)
 			},
 			expectError: true,
 			errContains: "type must be one of",

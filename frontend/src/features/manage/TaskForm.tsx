@@ -157,7 +157,11 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             id="task-type"
             value={type}
             onChange={(e) => setType(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+            disabled={isEditing}
+            className={cn(
+              "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent",
+              isEditing && "opacity-50 cursor-not-allowed"
+            )}
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>

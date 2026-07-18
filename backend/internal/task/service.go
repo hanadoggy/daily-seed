@@ -131,11 +131,16 @@ func (s *TaskServiceImpl) Update(ctx context.Context, task *Task) (*Task, error)
 		return nil, fmt.Errorf("cannot update an archived task")
 	}
 
+	if task.Type != existing.Type {
+		return nil, fmt.Errorf("task type cannot be changed after creation")
+	}
+
 	if err := validateTask(task); err != nil {
 		return nil, err
 	}
 
 	task.Status = existing.Status
+	task.Type = existing.Type
 
 	// If StartDate is delayed, we need to remove the task from past DailyRecords
 	if task.StartDate > existing.StartDate && s.cleaner != nil {

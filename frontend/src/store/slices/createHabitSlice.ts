@@ -37,7 +37,9 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
 
   archiveHabit: async (id) => {
     const previous = get().habits;
-    set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
+    set((state) => ({
+      habits: state.habits.map((h) => (h.id === id ? { ...h, status: 'archived' } : h)),
+    }));
     try {
       await apiDeleteHabit(id);
       get().setDateAndFetch(get().selectedDate);
