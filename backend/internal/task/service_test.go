@@ -431,28 +431,30 @@ func TestTaskService_GetProgressForActiveTasks(t *testing.T) {
 		expectedResults int
 	}{
 		{
-			name: "Pass: returns progress for quantitative tasks with totalTarget",
+			name: "Pass: returns progress for all active tasks",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
 					{ID: taskOID1, Title: "Kanji", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 500}},
 					{ID: taskOID2, Title: "Read News", Type: "boolean", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 1}},
 					{ID: taskOID3, Title: "LeetCode", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 3, TotalTarget: 100}},
 				}, nil)
-				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1, taskOID3}).Return(map[primitive.ObjectID]int{
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1, taskOID2, taskOID3}).Return(map[primitive.ObjectID]int{
 					taskOID1: 250,
+					taskOID2: 5,
 					taskOID3: 50,
 				}, nil)
 			},
-			expectedResults: 2,
+			expectedResults: 3,
 		},
 		{
-			name: "Pass: skips quantitative tasks with zero totalTarget",
+			name: "Pass: includes quantitative tasks with zero totalTarget",
 			mockSetup: func(repo *task.MockTaskRepository, agg *task.MockTaskProgressAggregator) {
 				repo.On("FindActiveTasks", mock.Anything).Return([]task.Task{
+					{ID: taskOID1, Title: "Pushups", Type: "quantitative", StartDate: "2026-07-17", Metrics: task.TaskMetrics{DailyTarget: 10, TotalTarget: 0}},
 				}, nil)
-				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{}).Return(map[primitive.ObjectID]int{}, nil)
+				agg.On("SumTaskProgressByIDs", mock.Anything, []primitive.ObjectID{taskOID1}).Return(map[primitive.ObjectID]int{}, nil)
 			},
-			expectedResults: 0,
+			expectedResults: 1,
 		},
 		{
 			name: "Fail: repo error",

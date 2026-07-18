@@ -33,6 +33,7 @@ type TaskConditions struct {
 type TaskProgress struct {
 	TaskID         primitive.ObjectID `json:"taskId"`
 	Title          string             `json:"title"`
+	Type           string             `json:"type"`
 	TotalTarget    int                `json:"totalTarget"`
 	TotalCompleted int                `json:"totalCompleted"`
 	Percentage     float64            `json:"percentage"`

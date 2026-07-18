@@ -8,6 +8,7 @@ export interface TaskMetrics {
 export interface TaskProgress {
   taskId: string;
   title: string;
+  type: 'quantitative' | 'boolean';
   totalTarget: number;
   totalCompleted: number;
   percentage: number;

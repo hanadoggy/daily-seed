@@ -178,9 +178,7 @@ func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]Task
 
 	taskIDs := make([]primitive.ObjectID, 0, len(tasks))
 	for _, t := range tasks {
-		if t.Type == "quantitative" && t.Metrics.TotalTarget > 0 {
-			taskIDs = append(taskIDs, t.ID)
-		}
+		taskIDs = append(taskIDs, t.ID)
 	}
 
 	progressMap, err := s.aggregator.SumTaskProgressByIDs(ctx, taskIDs)
@@ -190,10 +188,6 @@ func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]Task
 
 	progress := make([]TaskProgress, 0, len(taskIDs))
 	for _, t := range tasks {
-		if t.Type != "quantitative" || t.Metrics.TotalTarget <= 0 {
-			continue
-		}
-
 		completed := progressMap[t.ID]
 
 		pct := 0.0
@@ -204,6 +198,7 @@ func (s *TaskServiceImpl) GetProgressForActiveTasks(ctx context.Context) ([]Task
 		progress = append(progress, TaskProgress{
 			TaskID:         t.ID,
 			Title:          t.Title,
+			Type:           t.Type,
 			TotalTarget:    t.Metrics.TotalTarget,
 			TotalCompleted: completed,
 			Percentage:     pct,
