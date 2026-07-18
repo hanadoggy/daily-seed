@@ -47,4 +47,28 @@ describe('HabitForm', () => {
     const submitBtn = screen.getByRole('button', { name: 'Create Habit' });
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('populates data in edit mode and calls editHabit', async () => {
+    const existingHabit = {
+      id: 'h1',
+      title: 'Existing Habit',
+      category: 'health',
+    };
+    
+    render(<HabitForm habit={existingHabit as any} onClose={mockOnClose} />);
+    
+    expect(screen.getByDisplayValue('Existing Habit')).toBeInTheDocument();
+    
+    const titleInput = screen.getByDisplayValue('Existing Habit');
+    fireEvent.change(titleInput, { target: { value: 'Updated Habit' } });
+    
+    const submitBtn = screen.getByRole('button', { name: 'Save Changes' });
+    fireEvent.click(submitBtn);
+    
+    await waitFor(() => {
+      expect(mockEditHabit).toHaveBeenCalledWith('h1', expect.objectContaining({
+        title: 'Updated Habit',
+      }));
+    });
+  });
 });

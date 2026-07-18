@@ -15,6 +15,8 @@ vi.mock('../../api/client', () => ({
   createHabit: vi.fn(),
   updateHabit: vi.fn(),
   deleteHabit: vi.fn(),
+  migrateTask: vi.fn(),
+  fetchTaskProgress: vi.fn(),
 }));
 
 describe('useAppStore Optimistic Updates', () => {
@@ -116,5 +118,106 @@ describe('useAppStore Optimistic Updates', () => {
 
     expect(useAppStore.getState().currentWeather).toBe('rainy');
     expect(useAppStore.getState().dailyRecord?.context.weather).toBe('rainy');
+  });
+});
+
+describe('TaskSlice', () => {
+  beforeEach(() => {
+    useAppStore.setState({ tasks: [], error: null });
+    vi.clearAllMocks();
+  });
+
+  it('addTask should append to list on success', async () => {
+    const mockTask = { id: 't1', title: 'New Task' };
+    vi.mocked(apiClient.createTask).mockResolvedValueOnce(mockTask as any);
+    vi.mocked(apiClient.fetchTasks).mockResolvedValueOnce([mockTask] as any);
+
+    await useAppStore.getState().addTask({ title: 'New Task' } as any);
+
+    expect(useAppStore.getState().tasks).toContainEqual(mockTask);
+  });
+
+  it('archiveTask should remove optimistically and rollback on failure', async () => {
+    const existingTask = { id: 't1', title: 'Task 1', status: 'active' };
+    useAppStore.setState({ tasks: [existingTask as any] });
+    vi.mocked(apiClient.deleteTask).mockRejectedValueOnce(new Error('fail'));
+
+    await useAppStore.getState().archiveTask('t1');
+
+    // Should be rolled back
+    expect(useAppStore.getState().tasks).toHaveLength(1);
+  });
+
+  it('migrateTask should replace archived and add new', async () => {
+    const existingTask = { id: 't1', title: 'Task 1', status: 'active' };
+    useAppStore.setState({ tasks: [existingTask as any] });
+    const mockResult = {
+      archivedTask: { id: 't1', title: 'Task 1', status: 'archived' },
+      newTask: { id: 't2', title: 'Task 1', status: 'active' },
+    };
+    vi.mocked(apiClient.migrateTask).mockResolvedValueOnce(mockResult as any);
+    vi.mocked(apiClient.fetchTaskProgress).mockResolvedValueOnce([]);
+
+    await useAppStore.getState().migrateTask('t1', '2023-10-10');
+
+    expect(useAppStore.getState().tasks).toContainEqual(mockResult.archivedTask);
+    expect(useAppStore.getState().tasks).toContainEqual(mockResult.newTask);
+  });
+});
+
+describe('HabitSlice', () => {
+  beforeEach(() => {
+    useAppStore.setState({ habits: [], error: null });
+    vi.clearAllMocks();
+  });
+
+  it('addHabit should fetch habits on success', async () => {
+    const mockHabit = { id: 'h1', title: 'New Habit' };
+    vi.mocked(apiClient.createHabit).mockResolvedValueOnce(mockHabit as any);
+    vi.mocked(apiClient.fetchHabits).mockResolvedValueOnce([mockHabit] as any);
+
+    await useAppStore.getState().addHabit({ title: 'New Habit' } as any);
+
+    expect(useAppStore.getState().habits).toContainEqual(mockHabit);
+  });
+
+  it('archiveHabit should rollback on failure', async () => {
+    const existingHabit = { id: 'h1', title: 'Habit 1', status: 'active' };
+    useAppStore.setState({ habits: [existingHabit as any] });
+    vi.mocked(apiClient.deleteHabit).mockRejectedValueOnce(new Error('fail'));
+
+    await useAppStore.getState().archiveHabit('h1');
+
+    expect(useAppStore.getState().habits).toHaveLength(1);
+  });
+});
+
+describe('DailySlice extended', () => {
+  beforeEach(() => {
+    useAppStore.setState({ dailyRecord: null, error: null });
+    vi.clearAllMocks();
+  });
+
+  it('setDateAndFetch populates record on success', async () => {
+    const mockRecord = { id: '2023-10-10', context: { mode: 'Growth', weather: 'sunny' } };
+    vi.mocked(apiClient.fetchDailyRecord).mockResolvedValueOnce(mockRecord as any);
+
+    await useAppStore.getState().setDateAndFetch('2023-10-10');
+
+    expect(useAppStore.getState().selectedDate).toBe('2023-10-10');
+    expect(useAppStore.getState().dailyRecord).toEqual(mockRecord);
+    expect(useAppStore.getState().currentMode).toBe('Growth');
+  });
+
+  it('saveJournal updates record on success', async () => {
+    useAppStore.setState({ dailyRecord: { id: '2023-10-10', journal: {} } as any });
+    vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({ 
+      id: '2023-10-10', 
+      journal: { oneLineReview: 'test', threeLineDiary: '' } 
+    } as any);
+
+    await useAppStore.getState().saveJournal({ oneLineReview: 'test', threeLineDiary: '' });
+
+    expect(useAppStore.getState().dailyRecord?.journal.oneLineReview).toBe('test');
   });
 });

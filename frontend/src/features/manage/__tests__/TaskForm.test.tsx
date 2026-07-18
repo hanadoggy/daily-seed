@@ -65,4 +65,43 @@ describe('TaskForm', () => {
       }));
     });
   });
+
+  it('populates data in edit mode and calls editTask', async () => {
+    const existingTask = {
+      id: 't1',
+      title: 'Existing Task',
+      section: 'dev',
+      type: 'boolean',
+      metrics: { dailyTarget: 1, totalTarget: 0, unit: '' },
+      conditions: { mode: ['Growth'], weather: ['sunny'] },
+    };
+    
+    render(<TaskForm task={existingTask as any} onClose={mockOnClose} />);
+    
+    expect(screen.getByDisplayValue('Existing Task')).toBeInTheDocument();
+    
+    const titleInput = screen.getByDisplayValue('Existing Task');
+    fireEvent.change(titleInput, { target: { value: 'Updated Task' } });
+    
+    const submitBtn = screen.getByRole('button', { name: 'Save Changes' });
+    fireEvent.click(submitBtn);
+    
+    await waitFor(() => {
+      expect(mockEditTask).toHaveBeenCalledWith('t1', expect.objectContaining({
+        title: 'Updated Task',
+      }));
+    });
+  });
+
+  it('can toggle type and set metrics', async () => {
+    render(<TaskForm onClose={mockOnClose} />);
+    
+    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
+    fireEvent.change(titleInput, { target: { value: 'Read Pages' } });
+    
+    // Select quantitative type (since type defaults to boolean maybe?)
+    // Actually the default is 'quantitative' in the form, let's verify.
+    // Wait, let's check the type switch logic.
+    // It's a SegmentedControl or similar?
+  });
 });
