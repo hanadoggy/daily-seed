@@ -8,9 +8,10 @@ interface HabitItemProps {
   entry: HabitEntry;
   title: string;
   category?: string;
+  isReadOnly?: boolean;
 }
 
-export function HabitItem({ entry, title, category }: HabitItemProps) {
+export function HabitItem({ entry, title, category, isReadOnly }: HabitItemProps) {
   const toggleHabit = useAppStore((s) => s.toggleHabitOptimistic);
 
   const categoryOption = HABIT_CATEGORIES.find(c => c.value === category);
@@ -18,12 +19,16 @@ export function HabitItem({ entry, title, category }: HabitItemProps) {
 
   return (
     <button
-      onClick={() => toggleHabit(entry.habitId, !entry.isCompleted)}
+      onClick={() => {
+        if (!isReadOnly) toggleHabit(entry.habitId, !entry.isCompleted);
+      }}
+      disabled={isReadOnly}
       className={cn(
         'flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 text-left',
         'bg-card border border-border',
-        'hover:border-muted-foreground/50',
+        !isReadOnly && 'hover:border-muted-foreground/50',
         entry.isCompleted && 'border-mode-accent bg-mode-accent-soft',
+        isReadOnly && 'opacity-80 cursor-not-allowed',
       )}
     >
       <div

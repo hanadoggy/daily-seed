@@ -5,6 +5,7 @@ import { TaskItem } from './TaskItem';
 import { HabitItem } from './HabitItem';
 import type { Task, Habit } from '@/types';
 import { HABIT_CATEGORIES } from '../manage/categoryOptions';
+import { todayJST } from '@/lib/dayjs';
 
 import { SECTION_LABELS } from '@/lib/constants';
 
@@ -14,7 +15,8 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
-  const { dailyRecord, isLoading } = useAppStore();
+  const { dailyRecord, isLoading, selectedDate } = useAppStore();
+  const isReadOnly = selectedDate !== todayJST();
 
   if (isLoading) {
     return (
@@ -78,6 +80,8 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
                     entry={entry}
                     title={task?.title ?? 'Unknown Task'}
                     type={task?.type ?? 'boolean'}
+                    isReadOnly={isReadOnly}
+                    isArchived={task?.status === 'archived'}
                   />
                 );
               })}
@@ -118,6 +122,7 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
                   entry={entry}
                   title={habit?.title ?? 'Unknown Habit'}
                   category={habit?.category}
+                  isReadOnly={isReadOnly}
                 />
               );
             })}

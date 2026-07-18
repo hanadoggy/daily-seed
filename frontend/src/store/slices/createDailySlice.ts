@@ -113,7 +113,7 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
     const previousRecord = dailyRecord;
     const updatedTasks = dailyRecord.tasks.map((t: TaskEntry) => {
       if (t.taskId !== taskId) return t;
-      const newAmount = Math.max(0, Math.min(amount, t.targetAmount));
+      const newAmount = Math.max(0, amount);
       return {
         ...t,
         actualAmount: newAmount,
