@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, ListTodo, Sparkles } from 'lucide-react';
+import { Plus, Pencil, Trash2, ListTodo, Sparkles, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { useAppStore } from '@/store/useAppStore';
@@ -9,6 +9,7 @@ import type { Task, Habit } from '@/types';
 import { cn } from '@/lib/utils';
 import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions';
 import { HABIT_CATEGORIES } from './categoryOptions';
+import { SECTION_LABELS } from '@/lib/constants';
 
 type Tab = 'tasks' | 'habits';
 type FormState =
@@ -18,12 +19,7 @@ type FormState =
   | { mode: 'create-habit' }
   | { mode: 'edit-habit'; habit: Habit };
 
-const SECTION_LABELS: Record<string, string> = {
-  japanese: '🇯🇵 Japanese',
-  dev: '💻 Programming',
-  self_dev: '📚 Self Dev',
-  exercise: '🏋️ Exercise',
-};
+
 
 interface ManageModalProps {
   open: boolean;
@@ -225,7 +221,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                                   setConfirmingTaskId(null);
                                 }}
                               >
-                                ✅
+                                <Check className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
@@ -233,7 +229,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                                 className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
                                 onClick={() => setConfirmingTaskId(null)}
                               >
-                                ❌
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           ) : (
@@ -294,20 +290,20 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                               className="h-7 w-7 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
                               onClick={() => {
                                 archiveHabit(habit.id);
-                                setConfirmingHabitId(null);
-                              }}
-                            >
-                              ✅
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
-                              onClick={() => setConfirmingHabitId(null)}
-                            >
-                              ❌
-                            </Button>
-                          </div>
+                                  setConfirmingHabitId(null);
+                                }}
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
+                                onClick={() => setConfirmingHabitId(null)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
                         ) : (
                           <>
                             <Button

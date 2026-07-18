@@ -16,7 +16,7 @@ export function ContextModeToggle() {
             variant="outline"
             onClick={() => updateContextMode(value)}
             className={cn(
-              'flex-1 gap-2 py-5 transition-all duration-300 border',
+              'flex-1 gap-2 h-[62px] transition-all duration-300 border',
               isActive
                 ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
                 : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',

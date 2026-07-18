@@ -17,8 +17,8 @@ import { ThemeSwitcher } from '@/components/theme-switcher';
 const MODE_CLASS_MAP = {
   Growth: 'mode-growth',
   Rest: 'mode-rest',
-  Office: 'mode-work',
-  Remote: 'mode-work',
+  Office: 'mode-office',
+  Remote: 'mode-remote',
 } as const;
 
 function App() {

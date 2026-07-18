@@ -174,7 +174,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             Weather Condition
           </label>
           <div className="grid grid-cols-1 gap-2">
-            {WEATHER_OPTIONS.map(({ value, label, icon: Icon, color }) => {
+            {WEATHER_OPTIONS.map(({ value, label, icon: Icon, color, bgColor, borderColor }) => {
               const isActive = weather.includes(value);
               return (
                 <Button
@@ -185,7 +185,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   className={cn(
                     'w-full gap-2 transition-all duration-300 border',
                     isActive
-                      ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
+                      ? `${bgColor} ${borderColor} ${color} shadow-sm`
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
                   )}
                 >
@@ -202,7 +202,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             Context Mode
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {MODE_OPTIONS.map(({ value, label, icon: Icon, color }) => {
+            {MODE_OPTIONS.map(({ value, label, icon: Icon, color, bgColor, borderColor }) => {
               const isActive = mode.includes(value);
               return (
                 <Button
@@ -213,7 +213,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   className={cn(
                     'w-full h-9 transition-all duration-300 border flex items-center justify-center',
                     isActive
-                      ? 'bg-mode-accent-soft border-mode-accent text-mode-accent shadow-sm'
+                      ? `${bgColor} ${borderColor} ${color} shadow-sm`
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
                   )}
                   title={label}
@@ -258,10 +258,10 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
       )}
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={!title.trim() || submitting} className="flex-1">
+        <Button type="submit" disabled={!title.trim() || submitting} className="flex-1 bg-save hover:bg-save/90 text-white">
           {submitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Task'}
         </Button>
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} className="bg-cancel/15 text-cancel border-cancel/40 hover:bg-cancel/25 hover:text-cancel">
           Cancel
         </Button>
       </div>

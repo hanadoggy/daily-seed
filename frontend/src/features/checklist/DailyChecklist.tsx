@@ -6,12 +6,7 @@ import { HabitItem } from './HabitItem';
 import type { Task, Habit } from '@/types';
 import { HABIT_CATEGORIES } from '../manage/categoryOptions';
 
-const SECTION_LABELS: Record<string, string> = {
-  japanese: '🇯🇵 Japanese',
-  dev: '💻 Programming',
-  self_dev: '📚 Self Development',
-  exercise: '🏋️ Exercise',
-};
+import { SECTION_LABELS } from '@/lib/constants';
 
 interface DailyChecklistProps {
   tasks: Task[];

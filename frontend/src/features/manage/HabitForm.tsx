@@ -72,7 +72,7 @@ export function HabitForm({ habit, onClose }: HabitFormProps) {
                 className={cn(
                   'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
                   isSelected
-                    ? 'border-mode-accent bg-mode-accent/10 text-foreground'
+                    ? `${cat.bgColor} ${cat.borderColor} text-foreground`
                     : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 )}
               >
@@ -85,10 +85,10 @@ export function HabitForm({ habit, onClose }: HabitFormProps) {
       </div>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={!title.trim() || submitting} className="flex-1">
+        <Button type="submit" disabled={!title.trim() || submitting} className="flex-1 bg-save hover:bg-save/90 text-white">
           {submitting ? 'Saving…' : isEditing ? 'Save Changes' : 'Create Habit'}
         </Button>
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} className="bg-cancel/15 text-cancel border-cancel/40 hover:bg-cancel/25 hover:text-cancel">
           Cancel
         </Button>
       </div>
