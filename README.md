@@ -56,3 +56,5 @@ Phases 0–2 of the project roadmap are completed:
 - **Phase 2 (Intelligence):** Multi-select weather & context mode, array-based conditional task filtering, automated migration prompts, task start/end date lifecycle, archiving guards.
 
 The frontend (React/TypeScript) and backend (Go/MongoDB) are fully integrated with consistent data models and stable API contracts.
+
+- **Phase 3 (Analytics & Insights):** GitHub-style Heatmap Dashboard for visual contribution tracking.
