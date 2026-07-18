@@ -7,6 +7,7 @@ import { HabitForm } from './HabitForm';
 import type { Task, Habit } from '@/types';
 import { cn } from '@/lib/utils';
 import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions';
+import { HABIT_CATEGORIES } from './categoryOptions';
 
 type Tab = 'tasks' | 'habits';
 type FormState =
@@ -37,7 +38,18 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
 
   const activeTasks = tasks.filter((t) => t.status === 'active');
   const filteredTasks = tasks.filter((t) => t.status === taskFilter);
-  const activeHabits = habits.filter((h) => h.status === 'active');
+  const activeHabits = habits
+    .filter((h) => h.status === 'active')
+    .sort((a, b) => {
+      const catOrderA = HABIT_CATEGORIES.findIndex((c) => c.value === a.category);
+      const catOrderB = HABIT_CATEGORIES.findIndex((c) => c.value === b.category);
+      if (catOrderA !== catOrderB) {
+        if (catOrderA === -1) return 1;
+        if (catOrderB === -1) return -1;
+        return catOrderA - catOrderB;
+      }
+      return a.title.localeCompare(b.title);
+    });
 
   const showingForm = formState.mode !== 'closed';
 
@@ -263,16 +275,21 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                       No active habits yet. Create one to get started.
                     </p>
                   )}
-                  {activeHabits.map((habit) => (
+                  {activeHabits.map((habit) => {
+                    const categoryOption = HABIT_CATEGORIES.find(c => c.value === habit.category);
+                    const CategoryIcon = categoryOption?.icon;
+                    
+                    return (
                     <div
                       key={habit.id}
                       className="group flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-mode-accent/30"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{habit.title}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground capitalize">
-                          {habit.category}
-                        </p>
+                        <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground capitalize">
+                          {CategoryIcon && <CategoryIcon className={cn('h-3.5 w-3.5', categoryOption.color)} />}
+                          <span>{habit.category}</span>
+                        </div>
                       </div>
                       <div className={`flex gap-1 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                         {confirmingHabitId === habit.id ? (
@@ -318,7 +335,7 @@ export function ManagePanel({ onClose }: ManagePanelProps) {
                         )}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </>

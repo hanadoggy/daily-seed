@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { TaskItem } from './TaskItem';
 import { HabitItem } from './HabitItem';
 import type { Task, Habit } from '@/types';
+import { HABIT_CATEGORIES } from '../manage/categoryOptions';
 
 const SECTION_LABELS: Record<string, string> = {
   japanese: '🇯🇵 Japanese',
@@ -98,13 +99,30 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
             Habits
           </h3>
           <div className="space-y-2">
-            {dailyRecord.habits.map((entry) => {
+            {[...dailyRecord.habits]
+              .sort((a, b) => {
+                const habitA = habitMap.get(a.habitId);
+                const habitB = habitMap.get(b.habitId);
+                if (!habitA || !habitB) return 0;
+                
+                const catOrderA = HABIT_CATEGORIES.findIndex((c) => c.value === habitA.category);
+                const catOrderB = HABIT_CATEGORIES.findIndex((c) => c.value === habitB.category);
+                
+                if (catOrderA !== catOrderB) {
+                  if (catOrderA === -1) return 1;
+                  if (catOrderB === -1) return -1;
+                  return catOrderA - catOrderB;
+                }
+                return habitA.title.localeCompare(habitB.title);
+              })
+              .map((entry) => {
               const habit = habitMap.get(entry.habitId);
               return (
                 <HabitItem
                   key={entry.habitId}
                   entry={entry}
                   title={habit?.title ?? 'Unknown Habit'}
+                  category={habit?.category}
                 />
               );
             })}

@@ -26,13 +26,17 @@ describe('HabitForm', () => {
     const titleInput = screen.getByPlaceholderText('e.g. Morning stretching routine');
     fireEvent.change(titleInput, { target: { value: 'New Habit' } });
     
+    // Click on Finance category
+    const financeBtn = screen.getByRole('button', { name: 'Finance' });
+    fireEvent.click(financeBtn);
+
     const submitBtn = screen.getByRole('button', { name: 'Create Habit' });
     fireEvent.click(submitBtn);
     
     await waitFor(() => {
       expect(mockAddHabit).toHaveBeenCalledWith(expect.objectContaining({
         title: 'New Habit',
-        category: 'mindfulness',
+        category: 'finance',
       }));
     });
     expect(mockOnClose).toHaveBeenCalled();

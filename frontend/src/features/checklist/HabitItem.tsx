@@ -2,14 +2,19 @@ import { Check } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import type { HabitEntry } from '@/types';
 import { cn } from '@/lib/utils';
+import { HABIT_CATEGORIES } from '../manage/categoryOptions';
 
 interface HabitItemProps {
   entry: HabitEntry;
   title: string;
+  category?: string;
 }
 
-export function HabitItem({ entry, title }: HabitItemProps) {
+export function HabitItem({ entry, title, category }: HabitItemProps) {
   const toggleHabit = useAppStore((s) => s.toggleHabitOptimistic);
+
+  const categoryOption = HABIT_CATEGORIES.find(c => c.value === category);
+  const CategoryIcon = categoryOption?.icon;
 
   return (
     <button
@@ -31,14 +36,24 @@ export function HabitItem({ entry, title }: HabitItemProps) {
       >
         {entry.isCompleted && <Check className="h-3.5 w-3.5" />}
       </div>
-      <span
-        className={cn(
-          'text-sm font-medium transition-colors duration-300',
-          entry.isCompleted && 'text-mode-accent',
+      <div className="flex-1 min-w-0 flex items-center justify-between">
+        <span
+          className={cn(
+            'text-sm font-medium transition-colors duration-300',
+            entry.isCompleted && 'text-mode-accent',
+          )}
+        >
+          {title}
+        </span>
+        {CategoryIcon && (
+          <CategoryIcon 
+            className={cn(
+              'h-4 w-4 opacity-70 transition-opacity',
+              entry.isCompleted ? 'opacity-100 text-mode-accent' : categoryOption.color
+            )} 
+          />
         )}
-      >
-        {title}
-      </span>
+      </div>
     </button>
   );
 }

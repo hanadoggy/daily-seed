@@ -3,14 +3,8 @@ import type { Habit } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 
-const CATEGORY_OPTIONS = [
-  'mindfulness',
-  'health',
-  'productivity',
-  'learning',
-  'social',
-  'other',
-] as const;
+import { HABIT_CATEGORIES } from './categoryOptions';
+import { cn } from '@/lib/utils';
 
 interface HabitFormProps {
   habit?: Habit;
@@ -64,21 +58,30 @@ export function HabitForm({ habit, onClose }: HabitFormProps) {
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="habit-category" className="text-xs font-medium text-muted-foreground">
+        <label className="text-xs font-medium text-muted-foreground">
           Category
         </label>
-        <select
-          id="habit-category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
-        >
-          {CATEGORY_OPTIONS.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat.charAt(0).toUpperCase() + cat.slice(1)}
-            </option>
-          ))}
-        </select>
+        <div className="grid grid-cols-2 gap-2">
+          {HABIT_CATEGORIES.map((cat) => {
+            const isSelected = category === cat.value;
+            return (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => setCategory(cat.value)}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                  isSelected
+                    ? 'border-mode-accent bg-mode-accent/10 text-foreground'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                )}
+              >
+                <cat.icon className={cn('h-4 w-4', cat.color)} />
+                {cat.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex gap-2 pt-2">
