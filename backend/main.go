@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"daily-seed/internal/analytics"
 	"daily-seed/internal/config"
 	"daily-seed/internal/daily"
 	"daily-seed/internal/habit"
@@ -55,6 +56,7 @@ func main() {
 	dailySvc := daily.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
 	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo, dailyRecordRepo)
 	habitSvc := habit.NewHabitService(habitRepo)
+	analyticsSvc := analytics.NewAnalyticsService(dailyRecordRepo, taskRepo)
 
 	// Ensure Indexes
 	if err := habitRepo.EnsureIndexes(ctx); err != nil {
@@ -70,6 +72,7 @@ func main() {
 	dailyHandler := daily.NewDailyHandler(dailySvc)
 	taskHandler := task.NewTaskHandler(taskSvc)
 	habitHandler := habit.NewHabitHandler(habitSvc)
+	analyticsHandler := analytics.NewAnalyticsHandler(analyticsSvc)
 
 	// Gin setup.
 	gin.SetMode(gin.ReleaseMode)
@@ -95,6 +98,7 @@ func main() {
 	dailyHandler.RegisterRoutes(v1)
 	taskHandler.RegisterRoutes(v1)
 	habitHandler.RegisterRoutes(v1)
+	analyticsHandler.RegisterRoutes(v1)
 
 	// Start server.
 	addr := fmt.Sprintf(":%s", cfg.Port)

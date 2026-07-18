@@ -72,3 +72,14 @@ export interface DailyRecord {
   habits: HabitEntry[];
   journal: Journal;
 }
+
+export interface HeatmapDay {
+  date: string;
+  total: number;
+  habits: number;
+  sectionCounts: Record<string, number>;
+}
+
+export interface HeatmapResponse {
+  days: HeatmapDay[];
+}

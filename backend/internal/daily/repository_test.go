@@ -69,3 +69,37 @@ func TestDailyRecordRepository(t *testing.T) {
 		assert.ErrorIs(t, err, context.Canceled)
 	})
 }
+
+func TestMongoDailyRecordRepo_FindBetweenDates(t *testing.T) {
+	ctx := context.Background()
+	repo := daily.NewDailyRecordRepository(testutil.DB)
+
+	repo.Upsert(ctx, &daily.DailyRecord{
+		ID:   primitive.NewObjectID(),
+		Date: "2026-01-01",
+	})
+	repo.Upsert(ctx, &daily.DailyRecord{
+		ID:   primitive.NewObjectID(),
+		Date: "2026-01-05",
+	})
+	repo.Upsert(ctx, &daily.DailyRecord{
+		ID:   primitive.NewObjectID(),
+		Date: "2026-02-01",
+	})
+
+	t.Run("success_range", func(t *testing.T) {
+		records, err := repo.FindBetweenDates(ctx, "2026-01-01", "2026-01-31")
+		require.NoError(t, err)
+		assert.Len(t, records, 2)
+		assert.Equal(t, "2026-01-01", records[0].Date)
+		assert.Equal(t, "2026-01-05", records[1].Date)
+	})
+
+	t.Run("no_match", func(t *testing.T) {
+		records, err := repo.FindBetweenDates(ctx, "2025-01-01", "2025-12-31")
+		require.NoError(t, err)
+		assert.Len(t, records, 0)
+	})
+}
+
+

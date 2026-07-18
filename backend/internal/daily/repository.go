@@ -107,3 +107,23 @@ func (r *MongoDailyRecordRepo) RemoveTaskFromRecordsBeforeDate(ctx context.Conte
 	return err
 }
 
+func (r *MongoDailyRecordRepo) FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error) {
+	filter := bson.M{
+		"date": bson.M{
+			"$gte": startDate,
+			"$lte": endDate,
+		},
+	}
+	cursor, err := r.col.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "date", Value: 1}}))
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var records []*DailyRecord
+	if err := cursor.All(ctx, &records); err != nil {
+		return nil, err
+	}
+	return records, nil
+}
+

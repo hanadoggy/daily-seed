@@ -106,3 +106,9 @@ export function updateHabit(id: string, habit: Omit<Habit, 'id' | 'status'>): Pr
 export function deleteHabit(id: string): Promise<void> {
   return request(`/habits/${id}`, { method: 'DELETE' });
 }
+
+// --- Analytics ---
+
+export function fetchHeatmap(year: number): Promise<import('../types').HeatmapResponse> {
+  return request<import('../types').HeatmapResponse>(`/analytics/heatmap?year=${year}`);
+}

@@ -33,3 +33,11 @@ func (m *MockDailyRecordRepository) EnsureIndexes(ctx context.Context) error {
 	args := m.Called(ctx)
 	return args.Error(0)
 }
+
+func (m *MockDailyRecordRepository) FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error) {
+	args := m.Called(ctx, startDate, endDate)
+	if args.Get(0) != nil {
+		return args.Get(0).([]*DailyRecord), args.Error(1)
+	}
+	return nil, args.Error(1)
+}
