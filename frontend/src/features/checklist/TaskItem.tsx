@@ -62,7 +62,9 @@ export function TaskItem({ entry, title, type, isReadOnly, isArchived }: TaskIte
               ? 'border-mode-accent bg-mode-accent text-white'
               : 'border-muted-foreground/40',
             !disabled && !entry.isCompleted && 'hover:border-mode-accent',
-            disabled && 'opacity-80 cursor-not-allowed'
+            disabled && 'opacity-80',
+            isArchived && 'cursor-not-allowed',
+            isReadOnly && !isArchived && 'cursor-default'
           )}
         >
           {entry.isCompleted && <Check className="h-3.5 w-3.5" />}

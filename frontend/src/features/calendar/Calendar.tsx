@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store/useAppStore';
@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function Calendar() {
-  const { selectedDate, setDateAndFetch } = useAppStore();
+  const { selectedDate, setDateAndFetch, existingRecordDates, fetchExistingRecordDates } = useAppStore();
   const today = todayJST();
 
   const [viewMonth, setViewMonth] = useState(() => {
@@ -19,6 +19,10 @@ export function Calendar() {
   const year = viewMonth.year();
   const month = viewMonth.month();
   const daysInMonth = viewMonth.daysInMonth();
+
+  useEffect(() => {
+    fetchExistingRecordDates(year, month + 1);
+  }, [year, month, fetchExistingRecordDates]);
 
   // Sunday=0 based: startOf('month').day() returns 0=Sun
   const firstDayOfWeek = viewMonth.day(); // Sun=0
@@ -75,19 +79,22 @@ export function Calendar() {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isToday = dateStr === today;
           const isSelected = dateStr === selectedDate;
+          const hasRecord = existingRecordDates.includes(dateStr);
+          const isDisabled = !isToday && !hasRecord;
 
           return (
             <button
               key={dateStr}
-              onClick={() => handleDateClick(day)}
+              onClick={() => !isDisabled && handleDateClick(day)}
+              disabled={isDisabled}
               className={cn(
                 'relative h-9 w-full rounded-lg text-sm font-medium transition-all duration-200',
-                'hover:bg-accent hover:text-accent-foreground',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                isSelected && 'bg-mode-accent text-white shadow-md hover:bg-mode-accent',
+                isDisabled ? 'opacity-30 cursor-default' : 'hover:bg-accent hover:text-accent-foreground cursor-pointer',
+                isSelected && 'bg-mode-accent text-white shadow-md hover:bg-mode-accent opacity-100',
                 !isSelected && isToday && 'ring-1 ring-mode-accent text-mode-accent',
-                !isSelected && !isToday && i % 7 === 6 && 'text-cal-sat',
-                !isSelected && !isToday && i % 7 === 0 && 'text-cal-sun',
+                !isSelected && !isToday && !isDisabled && i % 7 === 6 && 'text-cal-sat',
+                !isSelected && !isToday && !isDisabled && i % 7 === 0 && 'text-cal-sun',
               )}
             >
               {day}

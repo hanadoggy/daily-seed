@@ -23,6 +23,8 @@ describe('Calendar', () => {
     (useAppStore as any).mockReturnValue({
       selectedDate: '2023-10-10',
       setDateAndFetch: mockSetDateAndFetch,
+      existingRecordDates: ['2023-10-15'],
+      fetchExistingRecordDates: vi.fn(),
     });
   });
 

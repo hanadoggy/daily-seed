@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"daily-seed/internal/daily"
 	"daily-seed/internal/habit"
@@ -21,7 +22,11 @@ func testOID(hex string) primitive.ObjectID {
 
 func TestDailyService_GetDailyRecord(t *testing.T) {
 	ctx := context.Background()
-	date := "2023-10-10"
+	date := "2023-10-10" // past date
+	
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+	today := time.Now().In(loc).Format("2006-01-02")
+
 	existingRecord := &daily.DailyRecord{ID: testOID("000000000000000000000001"), Date: date}
 
 	tests := []struct {
@@ -62,33 +67,42 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 			errContains: "finding daily record",
 		},
 		{
-			name: "Pass: generate new record (no tasks/habits)",
+			name: "Fail: cannot generate record for non-current date",
 			date: date,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
 				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
+			},
+			expectError: true,
+			errContains: "daily record not found for date",
+		},
+		{
+			name: "Pass: generate new record (no tasks/habits)",
+			date: today,
+			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
+				dRepo.On("FindByDate", ctx, today).Return(nil, nil)
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
 				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 				dRepo.On("Upsert", ctx, mock.AnythingOfType("*daily.DailyRecord")).Return(nil)
 			},
 			expectError: false,
 			validate: func(t *testing.T, record *daily.DailyRecord) {
-				assert.Equal(t, date, record.Date)
+				assert.Equal(t, today, record.Date)
 				assert.Empty(t, record.Tasks)
 				assert.Empty(t, record.Habits)
 			},
 		},
 		{
 			name: "Pass: generate new record (with tasks/habits)",
-			date: date,
+			date: today,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
-				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
+				dRepo.On("FindByDate", ctx, today).Return(nil, nil)
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{{ID: testOID("000000000000000000000001"), Metrics: task.TaskMetrics{DailyTarget: 2}}}, nil)
 				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{{ID: testOID("000000000000000000000002")}}, nil)
 				dRepo.On("Upsert", ctx, mock.AnythingOfType("*daily.DailyRecord")).Return(nil)
 			},
 			expectError: false,
 			validate: func(t *testing.T, record *daily.DailyRecord) {
-				assert.Equal(t, date, record.Date)
+				assert.Equal(t, today, record.Date)
 				assert.Len(t, record.Tasks, 1)
 				assert.Equal(t, testOID("000000000000000000000001"), record.Tasks[0].TaskID)
 				assert.Len(t, record.Habits, 1)
@@ -97,9 +111,9 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 		},
 		{
 			name: "Fail: task fetch error during generation",
-			date: date,
+			date: today,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
-				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
+				dRepo.On("FindByDate", ctx, today).Return(nil, nil)
 				tRepo.On("FindActiveTasks", ctx).Return(nil, errors.New("db error"))
 			},
 			expectError: true,
@@ -107,9 +121,9 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 		},
 		{
 			name: "Fail: habit fetch error during generation",
-			date: date,
+			date: today,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
-				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
+				dRepo.On("FindByDate", ctx, today).Return(nil, nil)
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
 				hRepo.On("FindActiveHabits", ctx).Return(nil, errors.New("db error"))
 			},
@@ -118,9 +132,9 @@ func TestDailyService_GetDailyRecord(t *testing.T) {
 		},
 		{
 			name: "Fail: Upsert error during generation",
-			date: date,
+			date: today,
 			mockSetup: func(dRepo *daily.MockDailyRecordRepository, tRepo *task.MockTaskRepository, hRepo *habit.MockHabitRepository) {
-				dRepo.On("FindByDate", ctx, date).Return(nil, nil)
+				dRepo.On("FindByDate", ctx, today).Return(nil, nil)
 				tRepo.On("FindActiveTasks", ctx).Return([]task.Task{}, nil)
 				hRepo.On("FindActiveHabits", ctx).Return([]habit.Habit{}, nil)
 				dRepo.On("Upsert", ctx, mock.Anything).Return(errors.New("db error"))
@@ -252,6 +266,71 @@ func TestDailyService_UpdateDailyRecord(t *testing.T) {
 			mockDailyRepo.AssertExpectations(t)
 			mockTaskRepo.AssertExpectations(t)
 			mockHabitRepo.AssertExpectations(t)
+		})
+	}
+}
+
+func TestDailyService_GetExistingRecordDates(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		year        int
+		month       int
+		mockSetup   func(*daily.MockDailyRecordRepository)
+		expectError bool
+		errContains string
+		validate    func(*testing.T, []string)
+	}{
+		{
+			name:  "Pass: returns list of dates",
+			year:  2026,
+			month: 7,
+			mockSetup: func(dRepo *daily.MockDailyRecordRepository) {
+				dRepo.On("FindBetweenDates", ctx, "2026-07-01", "2026-07-31").Return([]*daily.DailyRecord{
+					{Date: "2026-07-18"},
+					{Date: "2026-07-19"},
+				}, nil)
+			},
+			expectError: false,
+			validate: func(t *testing.T, dates []string) {
+				assert.Len(t, dates, 2)
+				assert.Equal(t, []string{"2026-07-18", "2026-07-19"}, dates)
+			},
+		},
+		{
+			name:  "Fail: db error",
+			year:  2026,
+			month: 7,
+			mockSetup: func(dRepo *daily.MockDailyRecordRepository) {
+				dRepo.On("FindBetweenDates", ctx, "2026-07-01", "2026-07-31").Return([]*daily.DailyRecord{}, errors.New("db error"))
+			},
+			expectError: true,
+			errContains: "db error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockDailyRepo := new(daily.MockDailyRecordRepository)
+			tt.mockSetup(mockDailyRepo)
+
+			svc := daily.NewDailyService(mockDailyRepo, nil, nil)
+			dates, err := svc.GetExistingRecordDates(ctx, tt.year, tt.month)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				if tt.errContains != "" {
+					assert.Contains(t, err.Error(), tt.errContains)
+				}
+				assert.Nil(t, dates)
+			} else {
+				assert.NoError(t, err)
+				if tt.validate != nil {
+					tt.validate(t, dates)
+				}
+			}
+			mockDailyRepo.AssertExpectations(t)
 		})
 	}
 }

@@ -28,7 +28,7 @@ export function HabitItem({ entry, title, category, isReadOnly }: HabitItemProps
         'bg-card border border-border',
         !isReadOnly && 'hover:border-muted-foreground/50',
         entry.isCompleted && 'border-mode-accent bg-mode-accent-soft',
-        isReadOnly && 'opacity-80 cursor-not-allowed',
+        isReadOnly && 'opacity-80 cursor-default',
       )}
     >
       <div

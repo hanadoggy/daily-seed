@@ -25,3 +25,11 @@ func (m *MockDailyService) UpdateDailyRecord(ctx context.Context, date string, r
 	}
 	return nil, args.Error(1)
 }
+
+func (m *MockDailyService) GetExistingRecordDates(ctx context.Context, year, month int) ([]string, error) {
+	args := m.Called(ctx, year, month)
+	if args.Get(0) != nil {
+		return args.Get(0).([]string), args.Error(1)
+	}
+	return nil, args.Error(1)
+}

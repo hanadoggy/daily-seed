@@ -59,6 +59,11 @@ func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*Da
 		return record, nil
 	}
 
+	today := time.Now().In(time.FixedZone("JST", 9*3600)).Format("2006-01-02")
+	if date != today {
+		return nil, fmt.Errorf("daily record not found for date: %s", date)
+	}
+
 	slog.Info("generating new daily record", slog.String("date", date))
 	record, err = s.generateDailyRecord(ctx, date)
 	if err != nil {
@@ -70,6 +75,27 @@ func (s *DailyServiceImpl) GetDailyRecord(ctx context.Context, date string) (*Da
 	}
 
 	return record, nil
+}
+
+// GetExistingRecordDates returns a list of dates that have daily records for a given month.
+func (s *DailyServiceImpl) GetExistingRecordDates(ctx context.Context, year, month int) ([]string, error) {
+	startDate := fmt.Sprintf("%04d-%02d-01", year, month)
+	
+	// Calculate end date
+	t := time.Date(year, time.Month(month+1), 0, 0, 0, 0, 0, time.UTC)
+	endDate := t.Format("2006-01-02")
+
+	records, err := s.dailyRepo.FindBetweenDates(ctx, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("fetching existing dates: %w", err)
+	}
+
+	dates := make([]string, 0, len(records))
+	for _, r := range records {
+		dates = append(dates, r.Date)
+	}
+
+	return dates, nil
 }
 
 // UpdateDailyRecord applies a partial update to the daily record, then returns

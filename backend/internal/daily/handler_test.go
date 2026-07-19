@@ -23,6 +23,82 @@ func setupDailyRouter(svc daily.DailyService) *gin.Engine {
 	return r
 }
 
+func TestDailyHandler_GetExistingRecordDates(t *testing.T) {
+	tests := []struct {
+		name           string
+		year           string
+		month          string
+		mockSetup      func(*daily.MockDailyService)
+		expectedStatus int
+		expectedCode   string
+		expectedDates  []string
+	}{
+		{
+			name:  "Pass: successful get",
+			year:  "2026",
+			month: "7",
+			mockSetup: func(m *daily.MockDailyService) {
+				m.On("GetExistingRecordDates", mock.Anything, 2026, 7).Return([]string{"2026-07-18", "2026-07-19"}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedDates:  []string{"2026-07-18", "2026-07-19"},
+		},
+		{
+			name:           "Fail: invalid year",
+			year:           "invalid",
+			month:          "7",
+			mockSetup:      func(m *daily.MockDailyService) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedCode:   "INVALID_YEAR",
+		},
+		{
+			name:           "Fail: invalid month",
+			year:           "2026",
+			month:          "13",
+			mockSetup:      func(m *daily.MockDailyService) {},
+			expectedStatus: http.StatusBadRequest,
+			expectedCode:   "INVALID_MONTH",
+		},
+		{
+			name:  "Fail: internal error",
+			year:  "2026",
+			month: "7",
+			mockSetup: func(m *daily.MockDailyService) {
+				m.On("GetExistingRecordDates", mock.Anything, 2026, 7).Return(([]string)(nil), errors.New("db error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedCode:   "INTERNAL_ERROR",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockSvc := new(daily.MockDailyService)
+			tt.mockSetup(mockSvc)
+			r := setupDailyRouter(mockSvc)
+
+			req, _ := http.NewRequest(http.MethodGet, "/api/v1/daily/exists?year="+tt.year+"&month="+tt.month, nil)
+			w := httptest.NewRecorder()
+
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, tt.expectedStatus, w.Code)
+			if tt.expectedCode != "" {
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedCode, response["code"])
+			} else if tt.expectedStatus == http.StatusOK {
+				var response map[string][]string
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedDates, response["dates"])
+			}
+			mockSvc.AssertExpectations(t)
+		})
+	}
+}
+
 func TestDailyHandler_GetDailyRecord(t *testing.T) {
 	tests := []struct {
 		name           string

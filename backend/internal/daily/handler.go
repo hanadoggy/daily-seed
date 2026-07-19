@@ -2,6 +2,7 @@ package daily
 
 import (
 	"daily-seed/internal/common"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -21,8 +22,34 @@ func NewDailyHandler(svc DailyService) *DailyHandler {
 
 // RegisterRoutes registers daily record routes on the given router group.
 func (h *DailyHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	rg.GET("/daily/exists", h.GetExistingRecordDates)
 	rg.GET("/daily/:date", h.GetDailyRecord)
 	rg.PATCH("/daily/:date", h.UpdateDailyRecord)
+}
+
+// GetExistingRecordDates handles GET /api/v1/daily/exists?year=YYYY&month=MM
+func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
+	yearStr := c.Query("year")
+	monthStr := c.Query("month")
+
+	var year, month int
+	if _, err := fmt.Sscanf(yearStr, "%d", &year); err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_YEAR", Message: "Invalid year parameter"})
+		return
+	}
+	if _, err := fmt.Sscanf(monthStr, "%d", &month); err != nil || month < 1 || month > 12 {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_MONTH", Message: "Invalid month parameter"})
+		return
+	}
+
+	dates, err := h.svc.GetExistingRecordDates(c.Request.Context(), year, month)
+	if err != nil {
+		slog.Error("failed to get existing record dates", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Code: "INTERNAL_ERROR", Message: "Failed to retrieve existing dates"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"dates": dates})
 }
 
 // GetDailyRecord handles GET /api/v1/daily/:date.

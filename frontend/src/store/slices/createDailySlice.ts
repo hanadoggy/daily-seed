@@ -7,12 +7,26 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
   selectedDate: '',
   currentMode: 'Growth',
   currentWeather: 'sunny',
+  isAdminMode: false,
+  existingRecordDates: [],
   dailyRecord: null,
   isLoading: false,
   error: null,
 
+  toggleAdminMode: () => set((state) => ({ isAdminMode: !state.isAdminMode })),
+
+  fetchExistingRecordDates: async (year: number, month: number) => {
+    try {
+      const { fetchExistingRecordDates } = await import('../../api/client');
+      const response = await fetchExistingRecordDates(year, month);
+      set({ existingRecordDates: response.dates });
+    } catch (err) {
+      console.error('Failed to fetch existing record dates', err);
+    }
+  },
+
   setDateAndFetch: async (date: string) => {
-    set({ selectedDate: date, isLoading: true, error: null });
+    set({ selectedDate: date, isAdminMode: false, isLoading: true, error: null });
     try {
       const record = await fetchDailyRecord(date);
       set({

@@ -38,6 +38,10 @@ export function fetchDailyRecord(date: string): Promise<DailyRecord> {
   return request<DailyRecord>(`/daily/${date}`);
 }
 
+export function fetchExistingRecordDates(year: number, month: number): Promise<{dates: string[]}> {
+  return request<{dates: string[]}>(`/daily/exists?year=${year}&month=${month}`);
+}
+
 export function patchDailyRecord(
   date: string,
   body: Partial<DailyRecord>,

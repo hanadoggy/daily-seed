@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, Check, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { useIsReadOnly } from '@/hooks/useIsReadOnly';
 import type { Journal } from '@/types';
 
 export function JournalSection() {
   const { dailyRecord, saveJournal, isLoading } = useAppStore();
+  const isReadOnly = useIsReadOnly();
   const [oneLineReview, setOneLineReview] = useState('');
   const [threeLineDiary, setThreeLineDiary] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
@@ -89,8 +91,9 @@ export function JournalSection() {
           <input
             id="one-line-review"
             type="text"
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-shadow"
-            placeholder="How was your day in one sentence?"
+            readOnly={isReadOnly}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-shadow read-only:opacity-60 read-only:cursor-default read-only:focus:ring-0"
+            placeholder={isReadOnly ? "No review added." : "How was your day in one sentence?"}
             value={oneLineReview}
             onChange={(e) => handleOneLineChange(e.target.value)}
           />
@@ -106,8 +109,9 @@ export function JournalSection() {
           <textarea
             id="three-line-diary"
             rows={3}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 resize-none transition-shadow"
-            placeholder="Reflect on today…"
+            readOnly={isReadOnly}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 resize-none transition-shadow read-only:opacity-60 read-only:cursor-default read-only:focus:ring-0"
+            placeholder={isReadOnly ? "No diary added." : "Reflect on today…"}
             value={threeLineDiary}
             onChange={(e) => handleDiaryChange(e.target.value)}
           />

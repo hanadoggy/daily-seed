@@ -5,8 +5,12 @@ export interface DailySlice {
   currentMode: ContextMode;
   currentWeather: string;
   dailyRecord: DailyRecord | null;
+  isAdminMode: boolean;
+  existingRecordDates: string[];
   isLoading: boolean;
   error: string | null;
+  toggleAdminMode: () => void;
+  fetchExistingRecordDates: (year: number, month: number) => Promise<void>;
   setDateAndFetch: (date: string) => Promise<void>;
   updateContextMode: (mode: ContextMode) => Promise<void>;
   updateWeather: (weather: string) => Promise<void>;

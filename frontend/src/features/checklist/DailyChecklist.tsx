@@ -5,7 +5,7 @@ import { TaskItem } from './TaskItem';
 import { HabitItem } from './HabitItem';
 import type { Task, Habit } from '@/types';
 import { HABIT_CATEGORIES } from '../manage/categoryOptions';
-import { todayJST } from '@/lib/dayjs';
+import { useIsReadOnly } from '@/hooks/useIsReadOnly';
 
 import { SECTION_LABELS } from '@/lib/constants';
 
@@ -15,8 +15,8 @@ interface DailyChecklistProps {
 }
 
 export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
-  const { dailyRecord, isLoading, selectedDate } = useAppStore();
-  const isReadOnly = selectedDate !== todayJST();
+  const { dailyRecord, isLoading } = useAppStore();
+  const isReadOnly = useIsReadOnly();
 
   if (isLoading) {
     return (

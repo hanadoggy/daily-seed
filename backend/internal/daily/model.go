@@ -70,6 +70,7 @@ type Journal struct {
 type DailyService interface {
 	GetDailyRecord(ctx context.Context, date string) (*DailyRecord, error)
 	UpdateDailyRecord(ctx context.Context, date string, req *UpdateDailyRecordRequest) (*DailyRecord, error)
+	GetExistingRecordDates(ctx context.Context, year, month int) ([]string, error)
 }
 
 type DailyRecordRepository interface {
@@ -77,4 +78,5 @@ type DailyRecordRepository interface {
 	Upsert(ctx context.Context, record *DailyRecord) error
 	PatchByDate(ctx context.Context, date string, setFields bson.M) error
 	EnsureIndexes(ctx context.Context) error
+	FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error)
 }
