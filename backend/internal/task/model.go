@@ -50,29 +50,14 @@ type MigrationResult struct {
 	NewTask      Task `json:"newTask"`
 }
 
-type TaskService interface {
-	List(ctx context.Context) ([]Task, error)
-	Get(ctx context.Context, id string) (*Task, error)
-	Create(ctx context.Context, task *Task) (*Task, error)
-	Update(ctx context.Context, task *Task) (*Task, error)
-	Archive(ctx context.Context, id string) error
-	GetProgressForActiveTasks(ctx context.Context) ([]TaskProgress, error)
-	MigrateTask(ctx context.Context, id string, req MigrateTaskRequest) (*MigrationResult, error)
-}
-
-type TaskRepository interface {
-	FindActiveTasks(ctx context.Context) ([]Task, error)
-	FindAll(ctx context.Context) ([]Task, error)
-	FindByID(ctx context.Context, id string) (*Task, error)
-	Create(ctx context.Context, task *Task) error
-	Update(ctx context.Context, task *Task) error
-	MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error
-	EnsureIndexes(ctx context.Context) error
-}
-
 // TaskProgressAggregator provides cumulative progress data from daily records.
 // Defined here to avoid circular imports with the daily package.
 type TaskProgressAggregator interface {
 	SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error)
 }
 
+// DailyCleaner cleans task records from daily records.
+// Defined here to avoid circular imports with the daily package.
+type DailyCleaner interface {
+	RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID primitive.ObjectID, date string) error
+}

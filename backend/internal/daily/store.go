@@ -9,26 +9,26 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type MongoDailyRecordRepo struct {
+type DailyStore struct {
 	col *mongo.Collection
 }
 
-func NewDailyRecordRepository(db *mongo.Database) *MongoDailyRecordRepo {
-	return &MongoDailyRecordRepo{col: db.Collection("dailyRecords")}
+func NewDailyStore(db *mongo.Database) *DailyStore {
+	return &DailyStore{col: db.Collection("dailyRecords")}
 }
 
-func (r *MongoDailyRecordRepo) EnsureIndexes(ctx context.Context) error {
+func (s *DailyStore) EnsureIndexes(ctx context.Context) error {
 	indexModel := mongo.IndexModel{
 		Keys:    bson.D{{Key: "date", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
-	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
+	_, err := s.col.Indexes().CreateOne(ctx, indexModel)
 	return err
 }
 
-func (r *MongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*DailyRecord, error) {
+func (s *DailyStore) FindByDate(ctx context.Context, date string) (*DailyRecord, error) {
 	var record DailyRecord
-	err := r.col.FindOne(ctx, bson.M{"date": date}).Decode(&record)
+	err := s.col.FindOne(ctx, bson.M{"date": date}).Decode(&record)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -38,20 +38,20 @@ func (r *MongoDailyRecordRepo) FindByDate(ctx context.Context, date string) (*Da
 	return &record, nil
 }
 
-func (r *MongoDailyRecordRepo) Upsert(ctx context.Context, record *DailyRecord) error {
+func (s *DailyStore) Upsert(ctx context.Context, record *DailyRecord) error {
 	filter := bson.M{"_id": record.ID}
 	update := bson.M{"$set": record}
 	opts := options.Update().SetUpsert(true)
 
-	_, err := r.col.UpdateOne(ctx, filter, update, opts)
+	_, err := s.col.UpdateOne(ctx, filter, update, opts)
 	return err
 }
 
-func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
+func (s *DailyStore) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
 	filter := bson.M{"date": date}
 	update := bson.M{"$set": setFields}
 
-	result, err := r.col.UpdateOne(ctx, filter, update)
+	result, err := s.col.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err
 	}
@@ -61,9 +61,8 @@ func (r *MongoDailyRecordRepo) PatchByDate(ctx context.Context, date string, set
 	return nil
 }
 
-// SumTaskProgress aggregates the total actualAmount for a given taskId across
-// all daily records. This satisfies the task.TaskProgressAggregator interface.
-func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error) {
+// SumTaskProgressByIDs satisfies task.TaskProgressAggregator interface.
+func (s *DailyStore) SumTaskProgressByIDs(ctx context.Context, taskIDs []primitive.ObjectID) (map[primitive.ObjectID]int, error) {
 	if len(taskIDs) == 0 {
 		return make(map[primitive.ObjectID]int), nil
 	}
@@ -78,7 +77,7 @@ func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs
 		}}},
 	}
 
-	cursor, err := r.col.Aggregate(ctx, pipeline)
+	cursor, err := s.col.Aggregate(ctx, pipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -99,22 +98,23 @@ func (r *MongoDailyRecordRepo) SumTaskProgressByIDs(ctx context.Context, taskIDs
 	return progressMap, nil
 }
 
-func (r *MongoDailyRecordRepo) RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID primitive.ObjectID, date string) error {
+// RemoveTaskFromRecordsBeforeDate satisfies task.DailyCleaner interface.
+func (s *DailyStore) RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID primitive.ObjectID, date string) error {
 	filter := bson.M{"date": bson.M{"$lt": date}}
 	update := bson.M{"$pull": bson.M{"tasks": bson.M{"taskId": taskID}}}
 
-	_, err := r.col.UpdateMany(ctx, filter, update)
+	_, err := s.col.UpdateMany(ctx, filter, update)
 	return err
 }
 
-func (r *MongoDailyRecordRepo) FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error) {
+func (s *DailyStore) FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error) {
 	filter := bson.M{
 		"date": bson.M{
 			"$gte": startDate,
 			"$lte": endDate,
 		},
 	}
-	cursor, err := r.col.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "date", Value: 1}}))
+	cursor, err := s.col.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "date", Value: 1}}))
 	if err != nil {
 		return nil, err
 	}
@@ -126,4 +126,3 @@ func (r *MongoDailyRecordRepo) FindBetweenDates(ctx context.Context, startDate s
 	}
 	return records, nil
 }
-

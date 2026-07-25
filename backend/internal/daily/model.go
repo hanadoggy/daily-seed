@@ -1,22 +1,18 @@
 package daily
 
 import (
-	"context"
-
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // DailyRecord represents a single day's transaction data.
 // The _id is a YYYY-MM-DD string in JST.
-import "go.mongodb.org/mongo-driver/bson/primitive"
-
 type DailyRecord struct {
 	ID      primitive.ObjectID `json:"id" bson:"_id"`
 	Date    string             `json:"date" bson:"date"`
 	Context DayContext         `json:"context" bson:"context"`
-	Tasks   []TaskEntry  `json:"tasks" bson:"tasks"`
-	Habits  []HabitEntry `json:"habits" bson:"habits"`
-	Journal Journal      `json:"journal" bson:"journal"`
+	Tasks   []TaskEntry        `json:"tasks" bson:"tasks"`
+	Habits  []HabitEntry       `json:"habits" bson:"habits"`
+	Journal Journal            `json:"journal" bson:"journal"`
 }
 
 type ContextMode string
@@ -65,18 +61,4 @@ type HabitEntry struct {
 type Journal struct {
 	OneLineReview  string `json:"oneLineReview" bson:"oneLineReview"`
 	ThreeLineDiary string `json:"threeLineDiary" bson:"threeLineDiary"`
-}
-
-type DailyService interface {
-	GetDailyRecord(ctx context.Context, date string) (*DailyRecord, error)
-	UpdateDailyRecord(ctx context.Context, date string, req *UpdateDailyRecordRequest) (*DailyRecord, error)
-	GetExistingRecordDates(ctx context.Context, year, month int) ([]string, error)
-}
-
-type DailyRecordRepository interface {
-	FindByDate(ctx context.Context, date string) (*DailyRecord, error)
-	Upsert(ctx context.Context, record *DailyRecord) error
-	PatchByDate(ctx context.Context, date string, setFields bson.M) error
-	EnsureIndexes(ctx context.Context) error
-	FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error)
 }

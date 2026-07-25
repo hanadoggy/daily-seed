@@ -2,7 +2,6 @@ package habit
 
 import (
 	"context"
-
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,16 +9,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MongoHabitRepo struct {
+type HabitStore struct {
 	col *mongo.Collection
 }
 
-func NewHabitRepository(db *mongo.Database) HabitRepository {
-	return &MongoHabitRepo{col: db.Collection("habits")}
+func NewHabitStore(db *mongo.Database) *HabitStore {
+	return &HabitStore{col: db.Collection("habits")}
 }
 
-func (r *MongoHabitRepo) FindActiveHabits(ctx context.Context) ([]Habit, error) {
-	cursor, err := r.col.Find(ctx, bson.M{"status": "active"})
+func (s *HabitStore) FindActiveHabits(ctx context.Context) ([]Habit, error) {
+	cursor, err := s.col.Find(ctx, bson.M{"status": "active"})
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +31,8 @@ func (r *MongoHabitRepo) FindActiveHabits(ctx context.Context) ([]Habit, error) 
 	return habits, nil
 }
 
-func (r *MongoHabitRepo) FindAll(ctx context.Context) ([]Habit, error) {
-	cursor, err := r.col.Find(ctx, bson.M{})
+func (s *HabitStore) FindAll(ctx context.Context) ([]Habit, error) {
+	cursor, err := s.col.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +45,13 @@ func (r *MongoHabitRepo) FindAll(ctx context.Context) ([]Habit, error) {
 	return habits, nil
 }
 
-func (r *MongoHabitRepo) FindByID(ctx context.Context, id string) (*Habit, error) {
+func (s *HabitStore) FindByID(ctx context.Context, id string) (*Habit, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid habit id format: %w", err)
 	}
 	var habit Habit
-	err = r.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&habit)
+	err = s.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&habit)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -62,22 +61,22 @@ func (r *MongoHabitRepo) FindByID(ctx context.Context, id string) (*Habit, error
 	return &habit, nil
 }
 
-func (r *MongoHabitRepo) Create(ctx context.Context, habit *Habit) error {
-	_, err := r.col.InsertOne(ctx, habit)
+func (s *HabitStore) Create(ctx context.Context, habit *Habit) error {
+	_, err := s.col.InsertOne(ctx, habit)
 	return err
 }
 
-func (r *MongoHabitRepo) Update(ctx context.Context, habit *Habit) error {
+func (s *HabitStore) Update(ctx context.Context, habit *Habit) error {
 	filter := bson.M{"_id": habit.ID}
 	update := bson.M{"$set": habit}
-	_, err := r.col.UpdateOne(ctx, filter, update)
+	_, err := s.col.UpdateOne(ctx, filter, update)
 	return err
 }
 
-func (r *MongoHabitRepo) EnsureIndexes(ctx context.Context) error {
+func (s *HabitStore) EnsureIndexes(ctx context.Context) error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{{Key: "status", Value: 1}},
 	}
-	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
+	_, err := s.col.Indexes().CreateOne(ctx, indexModel)
 	return err
 }

@@ -48,31 +48,27 @@ func main() {
 
 	db := client.Database(cfg.MongoDBName)
 
-	// Wire dependencies.
-	habitRepo := habit.NewHabitRepository(db)
-	taskRepo := task.NewTaskRepository(db)
-	dailyRecordRepo := daily.NewDailyRecordRepository(db)
-
-	dailySvc := daily.NewDailyService(dailyRecordRepo, taskRepo, habitRepo)
-	taskSvc := task.NewTaskService(taskRepo, dailyRecordRepo, dailyRecordRepo)
-	habitSvc := habit.NewHabitService(habitRepo)
-	analyticsSvc := analytics.NewAnalyticsService(dailyRecordRepo, taskRepo)
+	// Wire Stores.
+	habitStore := habit.NewHabitStore(db)
+	taskStore := task.NewTaskStore(db)
+	dailyStore := daily.NewDailyStore(db)
 
 	// Ensure Indexes
-	if err := habitRepo.EnsureIndexes(ctx); err != nil {
+	if err := habitStore.EnsureIndexes(ctx); err != nil {
 		slog.Error("failed to ensure habit indexes", slog.String("error", err.Error()))
 	}
-	if err := taskRepo.EnsureIndexes(ctx); err != nil {
+	if err := taskStore.EnsureIndexes(ctx); err != nil {
 		slog.Error("failed to ensure task indexes", slog.String("error", err.Error()))
 	}
-	if err := dailyRecordRepo.EnsureIndexes(ctx); err != nil {
+	if err := dailyStore.EnsureIndexes(ctx); err != nil {
 		slog.Error("failed to ensure daily record indexes", slog.String("error", err.Error()))
 	}
 
-	dailyHandler := daily.NewDailyHandler(dailySvc)
-	taskHandler := task.NewTaskHandler(taskSvc)
-	habitHandler := habit.NewHabitHandler(habitSvc)
-	analyticsHandler := analytics.NewAnalyticsHandler(analyticsSvc)
+	// Wire Handlers.
+	habitHandler := habit.NewHabitHandler(habitStore)
+	taskHandler := task.NewTaskHandler(taskStore, dailyStore, dailyStore)
+	dailyHandler := daily.NewDailyHandler(dailyStore, taskStore, habitStore)
+	analyticsHandler := analytics.NewAnalyticsHandler(dailyStore, taskStore)
 
 	// Gin setup.
 	gin.SetMode(gin.ReleaseMode)
@@ -95,9 +91,9 @@ func main() {
 
 	// API routes.
 	v1 := r.Group("/api/v1")
-	dailyHandler.RegisterRoutes(v1)
-	taskHandler.RegisterRoutes(v1)
 	habitHandler.RegisterRoutes(v1)
+	taskHandler.RegisterRoutes(v1)
+	dailyHandler.RegisterRoutes(v1)
 	analyticsHandler.RegisterRoutes(v1)
 
 	// Start server.

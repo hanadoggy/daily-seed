@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,28 +9,28 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MongoTaskRepo struct {
+type TaskStore struct {
 	client *mongo.Client
 	col    *mongo.Collection
 }
 
-func NewTaskRepository(db *mongo.Database) TaskRepository {
-	return &MongoTaskRepo{
+func NewTaskStore(db *mongo.Database) *TaskStore {
+	return &TaskStore{
 		client: db.Client(),
 		col:    db.Collection("tasks"),
 	}
 }
 
-func (r *MongoTaskRepo) EnsureIndexes(ctx context.Context) error {
+func (s *TaskStore) EnsureIndexes(ctx context.Context) error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{{Key: "status", Value: 1}},
 	}
-	_, err := r.col.Indexes().CreateOne(ctx, indexModel)
+	_, err := s.col.Indexes().CreateOne(ctx, indexModel)
 	return err
 }
 
-func (r *MongoTaskRepo) FindActiveTasks(ctx context.Context) ([]Task, error) {
-	cursor, err := r.col.Find(ctx, bson.M{"status": "active"})
+func (s *TaskStore) FindActiveTasks(ctx context.Context) ([]Task, error) {
+	cursor, err := s.col.Find(ctx, bson.M{"status": "active"})
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +43,8 @@ func (r *MongoTaskRepo) FindActiveTasks(ctx context.Context) ([]Task, error) {
 	return tasks, nil
 }
 
-func (r *MongoTaskRepo) FindAll(ctx context.Context) ([]Task, error) {
-	cursor, err := r.col.Find(ctx, bson.M{})
+func (s *TaskStore) FindAll(ctx context.Context) ([]Task, error) {
+	cursor, err := s.col.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +57,13 @@ func (r *MongoTaskRepo) FindAll(ctx context.Context) ([]Task, error) {
 	return tasks, nil
 }
 
-func (r *MongoTaskRepo) FindByID(ctx context.Context, id string) (*Task, error) {
+func (s *TaskStore) FindByID(ctx context.Context, id string) (*Task, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid task id format: %w", err)
 	}
 	var task Task
-	err = r.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&task)
+	err = s.col.FindOne(ctx, bson.M{"_id": oid}).Decode(&task)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
@@ -74,20 +73,20 @@ func (r *MongoTaskRepo) FindByID(ctx context.Context, id string) (*Task, error) 
 	return &task, nil
 }
 
-func (r *MongoTaskRepo) Create(ctx context.Context, task *Task) error {
-	_, err := r.col.InsertOne(ctx, task)
+func (s *TaskStore) Create(ctx context.Context, task *Task) error {
+	_, err := s.col.InsertOne(ctx, task)
 	return err
 }
 
-func (r *MongoTaskRepo) Update(ctx context.Context, task *Task) error {
+func (s *TaskStore) Update(ctx context.Context, task *Task) error {
 	filter := bson.M{"_id": task.ID}
 	update := bson.M{"$set": task}
-	_, err := r.col.UpdateOne(ctx, filter, update)
+	_, err := s.col.UpdateOne(ctx, filter, update)
 	return err
 }
 
-func (r *MongoTaskRepo) MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error {
-	session, err := r.client.StartSession()
+func (s *TaskStore) MigrateTaskAtomic(ctx context.Context, archivedTask *Task, newTask *Task) error {
+	session, err := s.client.StartSession()
 	if err != nil {
 		return fmt.Errorf("starting session: %w", err)
 	}
@@ -100,12 +99,12 @@ func (r *MongoTaskRepo) MigrateTaskAtomic(ctx context.Context, archivedTask *Tas
 			"status":  "archived",
 			"endDate": archivedTask.EndDate,
 		}}
-		if _, err := r.col.UpdateOne(sessCtx, filter, update); err != nil {
+		if _, err := s.col.UpdateOne(sessCtx, filter, update); err != nil {
 			return nil, fmt.Errorf("archiving old task: %w", err)
 		}
 
 		// Insert new task
-		if _, err := r.col.InsertOne(sessCtx, newTask); err != nil {
+		if _, err := s.col.InsertOne(sessCtx, newTask); err != nil {
 			return nil, fmt.Errorf("inserting new task: %w", err)
 		}
 		return nil, nil

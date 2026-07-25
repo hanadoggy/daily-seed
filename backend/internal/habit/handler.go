@@ -2,6 +2,7 @@ package habit
 
 import (
 	"daily-seed/internal/common"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -11,11 +12,11 @@ import (
 )
 
 type HabitHandler struct {
-	svc HabitService
+	store *HabitStore
 }
 
-func NewHabitHandler(svc HabitService) *HabitHandler {
-	return &HabitHandler{svc: svc}
+func NewHabitHandler(store *HabitStore) *HabitHandler {
+	return &HabitHandler{store: store}
 }
 
 func (h *HabitHandler) RegisterRoutes(rg *gin.RouterGroup) {
@@ -27,7 +28,7 @@ func (h *HabitHandler) RegisterRoutes(rg *gin.RouterGroup) {
 }
 
 func (h *HabitHandler) List(c *gin.Context) {
-	habits, err := h.svc.List(c.Request.Context())
+	habits, err := h.store.FindAll(c.Request.Context())
 	if err != nil {
 		slog.Error("failed to list habits", slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
@@ -43,19 +44,19 @@ func (h *HabitHandler) List(c *gin.Context) {
 func (h *HabitHandler) Get(c *gin.Context) {
 	id := c.Param("id")
 
-	habit, err := h.svc.Get(c.Request.Context(), id)
+	habit, err := h.store.FindByID(c.Request.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: err.Error(),
-			})
-			return
-		}
 		slog.Error("failed to get habit", slog.String("id", id), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "Failed to get habit",
+		})
+		return
+	}
+	if habit == nil {
+		c.JSON(http.StatusNotFound, common.ErrorResponse{
+			Code:    "NOT_FOUND",
+			Message: fmt.Sprintf("habit not found: %s", id),
 		})
 		return
 	}
@@ -73,16 +74,34 @@ func (h *HabitHandler) Create(c *gin.Context) {
 		return
 	}
 
-	created, err := h.svc.Create(c.Request.Context(), &habit)
-	if err != nil {
+	if strings.TrimSpace(habit.Title) == "" {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
-			Message: err.Error(),
+			Message: "title is required",
+		})
+		return
+	}
+	if strings.TrimSpace(habit.Category) == "" {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: "category is required",
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	habit.ID = primitive.NewObjectID()
+	habit.Status = "active"
+
+	if err := h.store.Create(c.Request.Context(), &habit); err != nil {
+		slog.Error("failed to create habit", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to create habit",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, habit)
 }
 
 func (h *HabitHandler) Update(c *gin.Context) {
@@ -106,36 +125,75 @@ func (h *HabitHandler) Update(c *gin.Context) {
 		return
 	}
 	habit.ID = oid
-	updated, err := h.svc.Update(c.Request.Context(), &habit)
+
+	existing, err := h.store.FindByID(c.Request.Context(), id)
 	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: err.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: err.Error(),
+		slog.Error("failed to find habit for update", slog.String("id", id), slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to update habit",
+		})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, common.ErrorResponse{
+			Code:    "NOT_FOUND",
+			Message: fmt.Sprintf("habit not found: %s", id),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	if strings.TrimSpace(habit.Title) == "" {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: "title is required",
+		})
+		return
+	}
+	if strings.TrimSpace(habit.Category) == "" {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: "category is required",
+		})
+		return
+	}
+
+	habit.Status = existing.Status
+
+	if err := h.store.Update(c.Request.Context(), &habit); err != nil {
+		slog.Error("failed to update habit", slog.String("id", id), slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to update habit",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, habit)
 }
 
 func (h *HabitHandler) Archive(c *gin.Context) {
 	id := c.Param("id")
 
-	if err := h.svc.Archive(c.Request.Context(), id); err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: err.Error(),
-			})
-			return
-		}
+	existing, err := h.store.FindByID(c.Request.Context(), id)
+	if err != nil {
+		slog.Error("failed to find habit for archive", slog.String("id", id), slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "Failed to archive habit",
+		})
+		return
+	}
+	if existing == nil {
+		c.JSON(http.StatusNotFound, common.ErrorResponse{
+			Code:    "NOT_FOUND",
+			Message: fmt.Sprintf("habit not found: %s", id),
+		})
+		return
+	}
+
+	existing.Status = "archived"
+	if err := h.store.Update(c.Request.Context(), existing); err != nil {
 		slog.Error("failed to archive habit", slog.String("id", id), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
