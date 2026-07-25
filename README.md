@@ -66,4 +66,4 @@ Phases 0–3 of the project roadmap are fully completed:
 - **Phase 0 (Foundation):** Monorepo structure, CRUD APIs, multi-theme UI, Docker Compose orchestration, and 2-Layer backend refactoring.
 - **Phase 1 (Motivation & Reflection):** Micro-journaling (debounced auto-save), cumulative progress tracker, atomic task migration.
 - **Phase 2 (Intelligence & Lifecycle):** Multi-select weather & context modes, conditional task filtering, automated migration prompts, task start/end date lifecycle, and archiving guards.
-- **Phase 3 (Analytics & Insights):** GitHub-style Heatmap Dashboard, calendar record indicators, and Admin Mode.
+- **Phase 3 (Analytics & Insights):** GitHub-style Heatmap Dashboard, Weekly & Monthly Summary Views (task & habit completion rates, mode distributions, journal timeline), calendar record indicators, and Admin Mode.
