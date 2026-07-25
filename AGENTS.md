@@ -21,14 +21,11 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 - Do not extract functions just because they are short (e.g., one-liners). 
 - Some repetition is acceptable if extracting it would reduce readability or add unnecessary abstraction.
 - Focus on making the **overall flow easy to understand** rather than forcing every small piece into its own function.
-- Good example: Extract `calculateCompletionRate()` if the same logic appears in multiple places.
-- Bad example: Extracting `getTrue()` or `formatDateString()` for a one-time simple operation.
 
 ### Error Handling
 - Handle errors explicitly. Never ignore or silently swallow errors.
-- In Go, always check and propagate errors appropriately.
-- In TypeScript, use proper error types or result patterns when it improves clarity.
-- Prefer returning errors over throwing exceptions when reasonable (especially in Go).
+- **Go:** Go does not have exceptions. Always return `error` as the last return value. Wrap errors with context using `fmt.Errorf("...: %w", err)` and check errors using `errors.Is` / `errors.As`.
+- **TypeScript:** Use proper error types or result patterns when it improves clarity.
 
 ### Comments
 - Write comments only when they explain **why** something is done, not what the code does.
@@ -37,22 +34,22 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 
 ### Testing & Maintainability
 - Write code that is reasonably testable. Prioritize long-term maintainability over micro-optimizations.
-- **Go:** Use the standard `testing` package along with `stretchr/testify` for assertions and mocking. Focus on unit testing business logic in the service layer using interface mocks.
+- **Go:** Use standard `testing` package with `testify/assert` for assertions. Prefer lightweight in-memory stubs or real database test setup (e.g. SQLite in-memory / `testutil`) over complex mock frameworks.
 - **TypeScript:** Use `Vitest` and `React Testing Library (RTL)`. Prioritize testing custom hooks and complex utility functions over simple UI components.
 - When in doubt, choose the simpler and more readable approach.
 
 ## Language Specific Guidelines
 
 ### Go (Backend)
-- **Architecture:** Follow a layered architecture: `handler` (HTTP), `service` (business logic), `repository` (DB operations). Place domain types and interfaces in a shared location to avoid circular dependencies.
-- Follow official Go formatting (`gofmt`).
-- Use `slog` for structured logging with request IDs.
-- Keep HTTP handlers relatively thin. Move complex logic to the service layer.
-- Use interfaces for dependency injection when it improves testability.
-- Always pass `context.Context` in public functions that may involve I/O or cancellation.
+- **Architecture:** Follow a pragmatic 2-Layer package-by-feature architecture (`handler` and `store` per feature domain inside `internal/<domain>`). Keep components co-located with their data models.
+- **Interfaces:** Follow Go's *"Accept interfaces, return structs"* idiom. Define small, consumer-side interfaces where they are used (e.g. in `handler.go`), never in central shared packages.
+- **Formatting & Style:** Follow official Go formatting (`gofmt`).
+- **Context:** Always pass `ctx context.Context` as the **first parameter** in functions performing I/O or cancellation-sensitive work.
+- **Logging:** Use `log/slog` for structured logging with explicit attributes (e.g., `slog.String("id", id)`).
+- **Validation:** Prefer explicit struct `Validate() error` methods or handler-level explicit validation over reflection-heavy tag validators.
 
 ### TypeScript / React (Frontend)
-- **Architecture:** Group files by feature (Feature-sliced design) rather than strictly by file type (e.g., keep a feature's components, hooks, and types close together).
+- **Architecture:** Group files by feature (`src/features`, `src/components`, `src/store`) keeping components, hooks, and types close together.
 - Use TypeScript in strict mode. Avoid `any` as much as possible.
 - Prefer small, focused components and custom hooks.
 - Use Zustand for global state. Keep component logic understandable. Some duplication in UI components is acceptable if it improves readability.
@@ -63,14 +60,13 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 
 ## Edge Cases, Concurrency & Validation
 
-- **Concurrency:** Handle potential race conditions gracefully. For instance, ensure a user cannot trigger the same action twice simultaneously (e.g., using optimistic locking or state checks before updating).
-- **Validation:** Always validate incoming API requests. Use `Zod` for TypeScript and `go-playground/validator` for Go to enforce strict input boundaries.
+- **Concurrency:** Handle potential race conditions gracefully. For instance, ensure a user cannot trigger the same action twice simultaneously.
+- **Validation:** Always validate incoming API requests (`Zod` for TypeScript, explicit validation methods for Go).
 
 ## Project Conventions
 
-- Follow the error response format: `{ code, message, details }`.
-- When modifying existing code, try to maintain consistency with surrounding code style unless there is a clear reason to improve it.
-
+- Follow the error response format: `{ code, message, details }` (`common.ErrorResponse`).
+- When modifying existing code, maintain consistency with surrounding code style unless there is a clear reason to improve it.
 
 ## Final Mindset
 
