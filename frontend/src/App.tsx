@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Leaf, Settings, BarChart2 } from 'lucide-react';
+import { Leaf, Settings, BarChart2, Pencil, Eye, Unlock } from 'lucide-react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AutoMigrationPrompt } from '@/features/progress/AutoMigrationPrompt';
 import { ManageModal } from '@/features/manage/ManageModal';
@@ -19,7 +19,7 @@ const MODE_CLASS_MAP = {
 } as const;
 
 function App() {
-  const { currentMode, selectedDate, setDateAndFetch, fetchMasterData, error } = useAppStore();
+  const { currentMode, selectedDate, setDateAndFetch, fetchMasterData, error, isAdminMode, toggleAdminMode } = useAppStore();
   const [initialized, setInitialized] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const location = useLocation();
@@ -44,6 +44,7 @@ function App() {
     : '';
 
   const isAnalytics = location.pathname === '/analytics';
+  const isToday = selectedDate === todayJST();
 
   return (
     <div className={cn('min-h-screen bg-background transition-colors duration-500', modeClass)}>
@@ -59,6 +60,38 @@ function App() {
             </Link>
             
             <div className="ml-auto flex items-center gap-2">
+              {/* Edit / View / Admin Mode Button */}
+              {isToday ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-primary/30 text-primary bg-primary/5 cursor-default"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit Mode
+                </Button>
+              ) : isAdminMode ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+                  onClick={toggleAdminMode}
+                >
+                  <Unlock className="h-3.5 w-3.5" />
+                  Admin Mode
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-accent/40 text-accent-foreground hover:bg-accent/10"
+                  onClick={toggleAdminMode}
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View Mode
+                </Button>
+              )}
+
               <ThemeSwitcher />
               
               {isAnalytics ? (

@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { SummaryResponse } from '@/types';
+import { MODE_OPTIONS } from '@/features/context-mode/conditionOptions';
 import {
   Calendar,
   ChevronLeft,
@@ -124,12 +125,12 @@ export function SummaryDashboard({
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Task Avg
             </span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-extrabold">{data.taskCompletion.overall}%</div>
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <div
-              className="bg-emerald-500 h-2 rounded-full transition-all"
+              className="bg-emerald-400 h-2 rounded-full transition-all"
               style={{ width: `${Math.min(100, data.taskCompletion.overall)}%` }}
             />
           </div>
@@ -141,12 +142,12 @@ export function SummaryDashboard({
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Habit Avg
             </span>
-            <Target className="w-4 h-4 text-blue-500" />
+            <Target className="w-4 h-4 text-amber-500" />
           </div>
           <div className="text-2xl font-extrabold">{data.habitCompletion.overall}%</div>
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <div
-              className="bg-blue-500 h-2 rounded-full transition-all"
+              className="bg-amber-500 h-2 rounded-full transition-all"
               style={{ width: `${Math.min(100, data.habitCompletion.overall)}%` }}
             />
           </div>
@@ -181,14 +182,26 @@ export function SummaryDashboard({
           </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {Object.keys(data.modeDistribution).length > 0 ? (
-              Object.entries(data.modeDistribution).map(([mode, count]) => (
-                <span
-                  key={mode}
-                  className="px-2 py-0.5 text-xs font-semibold rounded-md bg-muted/60 text-foreground"
-                >
-                  {mode}: {count}d
-                </span>
-              ))
+              Object.entries(data.modeDistribution).map(([mode, count]) => {
+                const modeOpt = MODE_OPTIONS.find((m) => m.value === mode);
+                const Icon = modeOpt?.icon;
+                return (
+                  <span
+                    key={mode}
+                    className={cn(
+                      'flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border',
+                      modeOpt
+                        ? `${modeOpt.bgColor} ${modeOpt.color} ${modeOpt.borderColor}`
+                        : 'bg-muted/60 text-foreground border-border',
+                    )}
+                  >
+                    {Icon && <Icon className="w-3.5 h-3.5" />}
+                    <span>
+                      {mode}: {count}d
+                    </span>
+                  </span>
+                );
+              })
             ) : (
               <span className="text-sm text-muted-foreground">No mode recorded</span>
             )}
@@ -213,7 +226,7 @@ export function SummaryDashboard({
                 {Object.entries(data.taskCompletion.sections).map(([sec, rate]) => (
                   <div key={sec} className="p-3 rounded-lg bg-muted/30 border border-border/50">
                     <div className="text-xs text-muted-foreground capitalize">{sec}</div>
-                    <div className="text-lg font-bold">{rate}%</div>
+                    <div className="text-lg font-bold text-emerald-400">{rate}%</div>
                   </div>
                 ))}
               </div>
@@ -233,7 +246,7 @@ export function SummaryDashboard({
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-primary h-1.5 rounded-full transition-all"
+                        className="bg-emerald-400 h-1.5 rounded-full transition-all"
                         style={{ width: `${Math.min(100, t.rate)}%` }}
                       />
                     </div>
@@ -265,7 +278,7 @@ export function SummaryDashboard({
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-blue-500 h-1.5 rounded-full transition-all"
+                        className="bg-amber-500 h-1.5 rounded-full transition-all"
                         style={{ width: `${Math.min(100, h.rate)}%` }}
                       />
                     </div>

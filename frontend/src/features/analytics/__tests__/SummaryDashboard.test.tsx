@@ -37,7 +37,7 @@ const mockSummaryData: SummaryResponse = {
       },
     ],
   },
-  modeDistribution: { Growth: 2, Rest: 1 },
+  modeDistribution: { Growth: 2, Rest: 1, Office: 1, Remote: 1 },
   journals: [
     {
       date: '2026-07-20',
@@ -79,7 +79,6 @@ describe('SummaryDashboard component', () => {
     expect(screen.getByText('80.5%')).toBeInTheDocument();
     expect(screen.getByText('66.7%')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument(); // recorded days
-    expect(screen.getByText(/Growth: 2d/)).toBeInTheDocument();
 
     // Individual breakdown
     expect(screen.getByText('Study Go')).toBeInTheDocument();
@@ -88,6 +87,23 @@ describe('SummaryDashboard component', () => {
     // Journal Timeline
     expect(screen.getByText('Productive day!')).toBeInTheDocument();
     expect(screen.getByText(/Woke up early/)).toBeInTheDocument();
+  });
+
+  it('renders MODES LOGGED badges with icons matching Dashboard modes', () => {
+    render(
+      <SummaryDashboard
+        data={mockSummaryData}
+        period="weekly"
+        isLoading={false}
+        onPeriodChange={() => {}}
+        onNavigate={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(/Growth: 2d/)).toBeInTheDocument();
+    expect(screen.getByText(/Rest: 1d/)).toBeInTheDocument();
+    expect(screen.getByText(/Office: 1d/)).toBeInTheDocument();
+    expect(screen.getByText(/Remote: 1d/)).toBeInTheDocument();
   });
 
   it('triggers onPeriodChange when clicking Monthly tab', () => {

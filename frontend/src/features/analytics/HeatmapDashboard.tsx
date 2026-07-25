@@ -97,7 +97,7 @@ export function HeatmapDashboard({ data, isLoading }: HeatmapDashboardProps) {
         </div>
       </div>
 
-      <div className="relative w-full overflow-x-auto pb-4 custom-scrollbar">
+      <div className="relative w-full overflow-x-auto pt-8 pb-6 custom-scrollbar">
         {isLoading ? (
           <div className="flex h-[120px] items-center justify-center text-muted-foreground text-sm">
             Loading...
@@ -111,6 +111,8 @@ export function HeatmapDashboard({ data, isLoading }: HeatmapDashboardProps) {
                     return <div key={`empty-${wIdx}-${dIdx}`} className="w-3 h-3 rounded-sm bg-transparent" />;
                   }
                   
+                  const isTopRow = dIdx < 3;
+
                   return (
                     <div
                       key={day.date}
@@ -123,9 +125,21 @@ export function HeatmapDashboard({ data, isLoading }: HeatmapDashboardProps) {
                         )}
                       />
                       {/* Tooltip */}
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-zinc-50 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-100 dark:text-zinc-900 shadow-xl">
+                      <div
+                        className={cn(
+                          "pointer-events-none absolute left-1/2 z-[100] -translate-x-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-zinc-50 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-zinc-100 dark:text-zinc-900 shadow-xl",
+                          isTopRow ? "top-full mt-2" : "bottom-full mb-2"
+                        )}
+                      >
                         {day.date}: {day.intensity} completions
-                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-4 border-transparent border-t-zinc-900 dark:border-t-zinc-100" />
+                        <div
+                          className={cn(
+                            "absolute left-1/2 -translate-x-1/2 border-4 border-transparent",
+                            isTopRow
+                              ? "-top-1 border-b-zinc-900 dark:border-b-zinc-100"
+                              : "-bottom-1 border-t-zinc-900 dark:border-t-zinc-100"
+                          )}
+                        />
                       </div>
                     </div>
                   );
