@@ -20,13 +20,13 @@ func NewHabitStore(db *mongo.Database) *HabitStore {
 func (s *HabitStore) FindActiveHabits(ctx context.Context) ([]Habit, error) {
 	cursor, err := s.col.Find(ctx, bson.M{"status": "active"})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find active habits: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	habits := make([]Habit, 0)
 	if err := cursor.All(ctx, &habits); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode active habits: %w", err)
 	}
 	return habits, nil
 }
@@ -34,13 +34,13 @@ func (s *HabitStore) FindActiveHabits(ctx context.Context) ([]Habit, error) {
 func (s *HabitStore) FindAll(ctx context.Context) ([]Habit, error) {
 	cursor, err := s.col.Find(ctx, bson.M{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find all habits: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	habits := make([]Habit, 0)
 	if err := cursor.All(ctx, &habits); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode habits: %w", err)
 	}
 	return habits, nil
 }
@@ -56,27 +56,33 @@ func (s *HabitStore) FindByID(ctx context.Context, id string) (*Habit, error) {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("find habit by id: %w", err)
 	}
 	return &habit, nil
 }
 
 func (s *HabitStore) Create(ctx context.Context, habit *Habit) error {
-	_, err := s.col.InsertOne(ctx, habit)
-	return err
+	if _, err := s.col.InsertOne(ctx, habit); err != nil {
+		return fmt.Errorf("create habit: %w", err)
+	}
+	return nil
 }
 
 func (s *HabitStore) Update(ctx context.Context, habit *Habit) error {
 	filter := bson.M{"_id": habit.ID}
 	update := bson.M{"$set": habit}
-	_, err := s.col.UpdateOne(ctx, filter, update)
-	return err
+	if _, err := s.col.UpdateOne(ctx, filter, update); err != nil {
+		return fmt.Errorf("update habit: %w", err)
+	}
+	return nil
 }
 
 func (s *HabitStore) EnsureIndexes(ctx context.Context) error {
 	indexModel := mongo.IndexModel{
 		Keys: bson.D{{Key: "status", Value: 1}},
 	}
-	_, err := s.col.Indexes().CreateOne(ctx, indexModel)
-	return err
+	if _, err := s.col.Indexes().CreateOne(ctx, indexModel); err != nil {
+		return fmt.Errorf("ensure habit indexes: %w", err)
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package daily
 
 import (
 	"context"
+	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,8 +23,10 @@ func (s *DailyStore) EnsureIndexes(ctx context.Context) error {
 		Keys:    bson.D{{Key: "date", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}
-	_, err := s.col.Indexes().CreateOne(ctx, indexModel)
-	return err
+	if _, err := s.col.Indexes().CreateOne(ctx, indexModel); err != nil {
+		return fmt.Errorf("ensure daily indexes: %w", err)
+	}
+	return nil
 }
 
 func (s *DailyStore) FindByDate(ctx context.Context, date string) (*DailyRecord, error) {
@@ -33,7 +36,7 @@ func (s *DailyStore) FindByDate(ctx context.Context, date string) (*DailyRecord,
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("find daily record by date: %w", err)
 	}
 	return &record, nil
 }
@@ -43,8 +46,10 @@ func (s *DailyStore) Upsert(ctx context.Context, record *DailyRecord) error {
 	update := bson.M{"$set": record}
 	opts := options.Update().SetUpsert(true)
 
-	_, err := s.col.UpdateOne(ctx, filter, update, opts)
-	return err
+	if _, err := s.col.UpdateOne(ctx, filter, update, opts); err != nil {
+		return fmt.Errorf("upsert daily record: %w", err)
+	}
+	return nil
 }
 
 func (s *DailyStore) PatchByDate(ctx context.Context, date string, setFields bson.M) error {
@@ -53,7 +58,7 @@ func (s *DailyStore) PatchByDate(ctx context.Context, date string, setFields bso
 
 	result, err := s.col.UpdateOne(ctx, filter, update)
 	if err != nil {
-		return err
+		return fmt.Errorf("patch daily record by date: %w", err)
 	}
 	if result.MatchedCount == 0 {
 		return mongo.ErrNoDocuments
@@ -79,7 +84,7 @@ func (s *DailyStore) SumTaskProgressByIDs(ctx context.Context, taskIDs []primiti
 
 	cursor, err := s.col.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("aggregate task progress: %w", err)
 	}
 	defer cursor.Close(ctx)
 
@@ -88,7 +93,7 @@ func (s *DailyStore) SumTaskProgressByIDs(ctx context.Context, taskIDs []primiti
 		Total int                `bson:"total"`
 	}
 	if err := cursor.All(ctx, &results); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode task progress aggregate: %w", err)
 	}
 
 	progressMap := make(map[primitive.ObjectID]int)
@@ -103,8 +108,10 @@ func (s *DailyStore) RemoveTaskFromRecordsBeforeDate(ctx context.Context, taskID
 	filter := bson.M{"date": bson.M{"$lt": date}}
 	update := bson.M{"$pull": bson.M{"tasks": bson.M{"taskId": taskID}}}
 
-	_, err := s.col.UpdateMany(ctx, filter, update)
-	return err
+	if _, err := s.col.UpdateMany(ctx, filter, update); err != nil {
+		return fmt.Errorf("remove task from records before date: %w", err)
+	}
+	return nil
 }
 
 func (s *DailyStore) FindBetweenDates(ctx context.Context, startDate string, endDate string) ([]*DailyRecord, error) {
@@ -116,13 +123,13 @@ func (s *DailyStore) FindBetweenDates(ctx context.Context, startDate string, end
 	}
 	cursor, err := s.col.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "date", Value: 1}}))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find daily records between dates: %w", err)
 	}
 	defer cursor.Close(ctx)
 
 	var records []*DailyRecord
 	if err := cursor.All(ctx, &records); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("decode daily records between dates: %w", err)
 	}
 	return records, nil
 }
