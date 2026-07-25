@@ -5,10 +5,12 @@ import (
 	"daily-seed/internal/common"
 	"daily-seed/internal/habit"
 	"daily-seed/internal/task"
+	"daily-seed/pkg/jst"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -41,12 +43,13 @@ func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
 	yearStr := c.Query("year")
 	monthStr := c.Query("month")
 
-	var year, month int
-	if _, err := fmt.Sscanf(yearStr, "%d", &year); err != nil {
+	year, err := strconv.Atoi(yearStr)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_YEAR", Message: "Invalid year parameter"})
 		return
 	}
-	if _, err := fmt.Sscanf(monthStr, "%d", &month); err != nil || month < 1 || month > 12 {
+	month, err := strconv.Atoi(monthStr)
+	if err != nil || month < 1 || month > 12 {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_MONTH", Message: "Invalid month parameter"})
 		return
 	}
@@ -155,7 +158,7 @@ func (h *DailyHandler) getDailyRecord(ctx context.Context, date string) (*DailyR
 		return record, nil
 	}
 
-	today := time.Now().In(time.FixedZone("JST", 9*3600)).Format("2006-01-02")
+	today := jst.Now().Format("2006-01-02")
 	if date != today {
 		return nil, fmt.Errorf("daily record not found for date: %s", date)
 	}

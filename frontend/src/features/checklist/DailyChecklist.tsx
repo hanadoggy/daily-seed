@@ -42,11 +42,11 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
   const habitMap = new Map(habits.map((h) => [h.id, h]));
 
   const tasksBySection = new Map<string, typeof dailyRecord.tasks>();
+  const { currentMode, currentWeather } = useAppStore.getState();
+
   for (const entry of dailyRecord.tasks) {
     const task = taskMap.get(entry.taskId);
     if (!task) continue;
-
-    const { currentMode, currentWeather } = useAppStore.getState();
 
     if (!task.conditions.mode.includes(currentMode)) continue;
     if (!task.conditions.weather.includes(currentWeather)) continue;

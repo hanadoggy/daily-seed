@@ -2,6 +2,8 @@ package task
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -27,6 +29,53 @@ type TaskMetrics struct {
 type TaskConditions struct {
 	Weather []string `json:"weather" bson:"weather"` // ["sunny", "rainy"]
 	Mode    []string `json:"mode" bson:"mode"`       // ["Growth", "Rest", "Office", "Remote"]
+}
+
+var (
+	validSections  = map[string]bool{"japanese": true, "dev": true, "self_dev": true, "exercise": true}
+	validTaskTypes = map[string]bool{"quantitative": true, "boolean": true}
+	validWeathers  = map[string]bool{"sunny": true, "rainy": true}
+	validModes     = map[string]bool{"Growth": true, "Rest": true, "Office": true, "Remote": true}
+)
+
+func (t *Task) Validate() error {
+	if strings.TrimSpace(t.Title) == "" {
+		return fmt.Errorf("title is required")
+	}
+	if !validSections[t.Section] {
+		return fmt.Errorf("section must be one of: japanese, dev, self_dev, exercise")
+	}
+	if !validTaskTypes[t.Type] {
+		return fmt.Errorf("type must be one of: quantitative, boolean")
+	}
+	if t.Type == "quantitative" && t.Metrics.DailyTarget <= 0 {
+		return fmt.Errorf("dailyTarget must be positive for quantitative tasks")
+	}
+	if t.Metrics.TotalTarget < 0 {
+		return fmt.Errorf("totalTarget cannot be negative")
+	}
+	if t.StartDate == "" {
+		return fmt.Errorf("startDate is required")
+	}
+
+	if len(t.Conditions.Weather) == 0 {
+		return fmt.Errorf("at least one weather condition is required")
+	}
+	if len(t.Conditions.Mode) == 0 {
+		return fmt.Errorf("at least one mode condition is required")
+	}
+	for _, w := range t.Conditions.Weather {
+		if !validWeathers[w] {
+			return fmt.Errorf("invalid weather value: %s", w)
+		}
+	}
+	for _, m := range t.Conditions.Mode {
+		if !validModes[m] {
+			return fmt.Errorf("invalid mode value: %s", m)
+		}
+	}
+
+	return nil
 }
 
 // TaskProgress represents a task's cumulative progress across all daily records.

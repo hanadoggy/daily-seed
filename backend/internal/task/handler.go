@@ -96,7 +96,7 @@ func (h *TaskHandler) Create(c *gin.Context) {
 		task.Metrics.DailyTarget = 1
 	}
 
-	if err := validateTask(&task); err != nil {
+	if err := task.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
 			Message: err.Error(),
@@ -173,7 +173,7 @@ func (h *TaskHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if err := validateTask(&task); err != nil {
+	if err := task.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
 			Message: err.Error(),
@@ -303,61 +303,6 @@ func (h *TaskHandler) Migrate(c *gin.Context) {
 }
 
 // Helper methods
-
-var validSections = map[string]bool{
-	"japanese": true,
-	"dev":      true,
-	"self_dev": true,
-	"exercise": true,
-}
-
-var validTaskTypes = map[string]bool{
-	"quantitative": true,
-	"boolean":      true,
-}
-
-var validWeathers = map[string]bool{"sunny": true, "rainy": true}
-var validModes = map[string]bool{"Growth": true, "Rest": true, "Office": true, "Remote": true}
-
-func validateTask(task *Task) error {
-	if strings.TrimSpace(task.Title) == "" {
-		return fmt.Errorf("title is required")
-	}
-	if !validSections[task.Section] {
-		return fmt.Errorf("section must be one of: japanese, dev, self_dev, exercise")
-	}
-	if !validTaskTypes[task.Type] {
-		return fmt.Errorf("type must be one of: quantitative, boolean")
-	}
-	if task.Type == "quantitative" && task.Metrics.DailyTarget <= 0 {
-		return fmt.Errorf("dailyTarget must be positive for quantitative tasks")
-	}
-	if task.Metrics.TotalTarget < 0 {
-		return fmt.Errorf("totalTarget cannot be negative")
-	}
-	if task.StartDate == "" {
-		return fmt.Errorf("startDate is required")
-	}
-
-	if len(task.Conditions.Weather) == 0 {
-		return fmt.Errorf("at least one weather condition is required")
-	}
-	if len(task.Conditions.Mode) == 0 {
-		return fmt.Errorf("at least one mode condition is required")
-	}
-	for _, w := range task.Conditions.Weather {
-		if !validWeathers[w] {
-			return fmt.Errorf("invalid weather value: %s", w)
-		}
-	}
-	for _, m := range task.Conditions.Mode {
-		if !validModes[m] {
-			return fmt.Errorf("invalid mode value: %s", m)
-		}
-	}
-
-	return nil
-}
 
 func (h *TaskHandler) getProgressForActiveTasks(ctx context.Context) ([]TaskProgress, error) {
 	tasks, err := h.store.FindActiveTasks(ctx)

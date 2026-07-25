@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { AppState, DailySlice } from '../types';
-import { fetchDailyRecord, patchDailyRecord } from '../../api/client';
+import { fetchDailyRecord, patchDailyRecord, fetchExistingRecordDates } from '../../api/client';
 import type { ContextMode, Journal, HabitEntry, TaskEntry } from '../../types';
 
 export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set, get) => ({
@@ -17,7 +17,6 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
 
   fetchExistingRecordDates: async (year: number, month: number) => {
     try {
-      const { fetchExistingRecordDates } = await import('../../api/client');
       const response = await fetchExistingRecordDates(year, month);
       set({ existingRecordDates: response.dates });
     } catch (err) {
@@ -31,7 +30,7 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       const record = await fetchDailyRecord(date);
       set({
         dailyRecord: record,
-        currentMode: record.context.mode as ContextMode,
+        currentMode: record.context.mode,
         currentWeather: record.context.weather || 'sunny',
         isLoading: false,
       });
