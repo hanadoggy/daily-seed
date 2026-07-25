@@ -144,3 +144,48 @@ func TestGetHeatmapData_ErrorFetchingTasks(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to fetch tasks")
 }
+
+func TestGetHeatmapData_UnmappedTasksAndEmptyRecords(t *testing.T) {
+	mockDailyRepo := new(MockDailyRecordRepository)
+	mockTaskRepo := new(MockTaskRepository)
+	svc := NewAnalyticsService(mockDailyRepo, mockTaskRepo)
+
+	ctx := context.Background()
+	year := 2026
+
+	unmappedTaskID := primitive.NewObjectID()
+	records := []*daily.DailyRecord{
+		{
+			Date: "2026-05-15",
+			Tasks: []daily.TaskEntry{
+				{TaskID: unmappedTaskID, IsCompleted: true},
+			},
+			Habits: nil, // null habits slice
+		},
+	}
+
+	startDate := fmt.Sprintf("%04d-01-01", year)
+	endDate := fmt.Sprintf("%04d-12-31", year)
+
+	mockDailyRepo.On("FindBetweenDates", ctx, startDate, endDate).Return(records, nil)
+	mockTaskRepo.On("FindAll", ctx).Return([]task.Task{}, nil) // No tasks mapped
+
+	res, err := svc.GetHeatmapData(ctx, year)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+
+	var targetDay HeatmapDay
+	for _, d := range res.Days {
+		if d.Date == "2026-05-15" {
+			targetDay = d
+			break
+		}
+	}
+
+	assert.Equal(t, "2026-05-15", targetDay.Date)
+	assert.Equal(t, 1, targetDay.Total) // Completed task counted in Total
+	assert.Equal(t, 0, targetDay.Habits)
+	assert.Empty(t, targetDay.SectionCounts) // Unmapped task section count is not updated
+}
+

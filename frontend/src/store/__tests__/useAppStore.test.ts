@@ -163,6 +163,29 @@ describe('TaskSlice', () => {
     expect(useAppStore.getState().tasks).toContainEqual(mockResult.archivedTask);
     expect(useAppStore.getState().tasks).toContainEqual(mockResult.newTask);
   });
+
+  it('editTask should rollback on failure and set error state', async () => {
+    const existingTask = { id: 't1', title: 'Task 1', section: 'dev' };
+    useAppStore.setState({ tasks: [existingTask as any], error: null });
+    vi.mocked(apiClient.updateTask).mockRejectedValueOnce(new Error('Update failed'));
+
+    await useAppStore.getState().editTask('t1', { title: 'Updated Title' } as any);
+
+    expect(useAppStore.getState().tasks[0].title).toBe('Task 1');
+    expect(useAppStore.getState().error).toBe('Update failed');
+  });
+
+  it('migrateTask should rollback on failure and set error state', async () => {
+    const existingTask = { id: 't1', title: 'Task 1', status: 'active' };
+    useAppStore.setState({ tasks: [existingTask as any], error: null });
+    vi.mocked(apiClient.migrateTask).mockRejectedValueOnce(new Error('Migration failed'));
+
+    await useAppStore.getState().migrateTask('t1', '2023-10-10');
+
+    expect(useAppStore.getState().tasks).toHaveLength(1);
+    expect(useAppStore.getState().tasks[0].id).toBe('t1');
+    expect(useAppStore.getState().error).toBe('Migration failed');
+  });
 });
 
 describe('HabitSlice', () => {
@@ -190,6 +213,17 @@ describe('HabitSlice', () => {
 
     expect(useAppStore.getState().habits).toHaveLength(1);
   });
+
+  it('editHabit should rollback on failure and set error state', async () => {
+    const existingHabit = { id: 'h1', title: 'Habit 1' };
+    useAppStore.setState({ habits: [existingHabit as any], error: null });
+    vi.mocked(apiClient.updateHabit).mockRejectedValueOnce(new Error('Habit update failed'));
+
+    await useAppStore.getState().editHabit('h1', { title: 'Updated Habit' } as any);
+
+    expect(useAppStore.getState().habits[0].title).toBe('Habit 1');
+    expect(useAppStore.getState().error).toBe('Habit update failed');
+  });
 });
 
 describe('DailySlice extended', () => {
@@ -209,6 +243,15 @@ describe('DailySlice extended', () => {
     expect(useAppStore.getState().currentMode).toBe('Growth');
   });
 
+  it('setDateAndFetch sets error on API failure', async () => {
+    vi.mocked(apiClient.fetchDailyRecord).mockRejectedValueOnce(new Error('Fetch failed'));
+
+    await useAppStore.getState().setDateAndFetch('2023-10-10');
+
+    expect(useAppStore.getState().dailyRecord).toBeNull();
+    expect(useAppStore.getState().error).toBe('Fetch failed');
+  });
+
   it('saveJournal updates record on success', async () => {
     useAppStore.setState({ dailyRecord: { id: '2023-10-10', journal: {} } as any });
     vi.mocked(apiClient.patchDailyRecord).mockResolvedValueOnce({ 
@@ -220,4 +263,20 @@ describe('DailySlice extended', () => {
 
     expect(useAppStore.getState().dailyRecord?.journal.oneLineReview).toBe('test');
   });
+
+  it('saveJournal rolls back and sets error on API failure', async () => {
+    const originalJournal = { oneLineReview: 'original', threeLineDiary: 'original diary' };
+    useAppStore.setState({
+      selectedDate: '2023-10-10',
+      dailyRecord: { id: '2023-10-10', journal: originalJournal } as any,
+      error: null,
+    });
+    vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Patch failed'));
+
+    await useAppStore.getState().saveJournal({ oneLineReview: 'new review', threeLineDiary: 'new diary' });
+
+    expect(useAppStore.getState().dailyRecord?.journal).toEqual(originalJournal);
+    expect(useAppStore.getState().error).toBe('Patch failed');
+  });
 });
+

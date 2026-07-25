@@ -46,6 +46,14 @@ describe('TaskForm', () => {
     expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('disables submit when title contains only whitespace', () => {
+    render(<TaskForm onClose={mockOnClose} />);
+    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
+    fireEvent.change(titleInput, { target: { value: '   ' } });
+    const submitBtn = screen.getByRole('button', { name: 'Create Task' });
+    expect((submitBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('can select exercise section', async () => {
     render(<TaskForm onClose={mockOnClose} />);
     

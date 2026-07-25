@@ -299,6 +299,36 @@ func TestDailyService_GetExistingRecordDates(t *testing.T) {
 			},
 		},
 		{
+			name:  "Pass: December month end date boundary",
+			year:  2026,
+			month: 12,
+			mockSetup: func(dRepo *daily.MockDailyRecordRepository) {
+				dRepo.On("FindBetweenDates", ctx, "2026-12-01", "2026-12-31").Return([]*daily.DailyRecord{
+					{Date: "2026-12-31"},
+				}, nil)
+			},
+			expectError: false,
+			validate: func(t *testing.T, dates []string) {
+				assert.Len(t, dates, 1)
+				assert.Equal(t, []string{"2026-12-31"}, dates)
+			},
+		},
+		{
+			name:  "Pass: February leap year boundary (2024)",
+			year:  2024,
+			month: 2,
+			mockSetup: func(dRepo *daily.MockDailyRecordRepository) {
+				dRepo.On("FindBetweenDates", ctx, "2024-02-01", "2024-02-29").Return([]*daily.DailyRecord{
+					{Date: "2024-02-29"},
+				}, nil)
+			},
+			expectError: false,
+			validate: func(t *testing.T, dates []string) {
+				assert.Len(t, dates, 1)
+				assert.Equal(t, []string{"2024-02-29"}, dates)
+			},
+		},
+		{
 			name:  "Fail: db error",
 			year:  2026,
 			month: 7,
@@ -334,3 +364,4 @@ func TestDailyService_GetExistingRecordDates(t *testing.T) {
 		})
 	}
 }
+
