@@ -89,4 +89,104 @@ func TestAnalyticsHandler_Slice(t *testing.T) {
 		w = testutil.DoRequest(router, "GET", "/api/v1/analytics/heatmap?year=invalid", nil)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 	})
+
+	t.Run("GET /api/v1/analytics/summary", func(t *testing.T) {
+		testutil.ClearDB(ctx)
+		router := testutil.SetupRouter(testutil.DB)
+
+		// Seed Task & Habit
+		devTaskID := testutil.SeedTask(ctx, testutil.DB, task.Task{
+			Title: "Refactor Architecture", Section: "dev", Type: "quantitative", Status: "active", StartDate: "2026-01-01",
+		})
+		habitID := testutil.SeedHabit(ctx, testutil.DB, habit.Habit{
+			Title: "Morning Meditation", Category: "Mindfulness", Status: "active",
+		})
+
+		// 2026-07-22 is Wednesday. Week range: 2026-07-19 (Sunday) ~ 2026-07-25 (Saturday). Total days: 7.
+		// Seed 2 records in this week
+		testutil.SeedDailyRecord(ctx, testutil.DB, daily.DailyRecord{
+			Date: "2026-07-20", // Monday
+			Context: daily.DayContext{
+				Mode:    daily.ModeGrowth,
+				Weather: "sunny",
+			},
+			Tasks: []daily.TaskEntry{
+				{TaskID: devTaskID, TargetAmount: 5, ActualAmount: 5, IsCompleted: true},
+			},
+			Habits: []daily.HabitEntry{
+				{HabitID: habitID, IsCompleted: true},
+			},
+			Journal: daily.Journal{
+				OneLineReview:  "Great focus today!",
+				ThreeLineDiary: "Finished task 1.\nStarted task 2.\nFelt good.",
+			},
+		})
+
+		testutil.SeedDailyRecord(ctx, testutil.DB, daily.DailyRecord{
+			Date: "2026-07-21", // Tuesday
+			Context: daily.DayContext{
+				Mode:    daily.ModeGrowth,
+				Weather: "rainy",
+			},
+			Tasks: []daily.TaskEntry{
+				{TaskID: devTaskID, TargetAmount: 5, ActualAmount: 2, IsCompleted: false},
+			},
+			Habits: []daily.HabitEntry{
+				{HabitID: habitID, IsCompleted: false},
+			},
+		})
+
+		// 1. Weekly summary request
+		w := testutil.DoRequest(router, "GET", "/api/v1/analytics/summary?period=weekly&date=2026-07-22", nil)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var summaryRes analytics.SummaryResponse
+		err := json.Unmarshal(w.Body.Bytes(), &summaryRes)
+		require.NoError(t, err)
+
+		assert.Equal(t, "weekly", summaryRes.Period)
+		assert.Equal(t, "2026-07-19", summaryRes.StartDate)
+		assert.Equal(t, "2026-07-25", summaryRes.EndDate)
+		assert.Equal(t, 7, summaryRes.TotalDays)
+		assert.Equal(t, 2, summaryRes.RecordedDays)
+
+		// Tasks: Total completed 7 / target 10 = 70.0%
+		assert.Equal(t, 70.0, summaryRes.TaskCompletion.Overall)
+		assert.Equal(t, 70.0, summaryRes.TaskCompletion.Sections["dev"])
+		require.Len(t, summaryRes.TaskCompletion.PerTask, 1)
+		assert.Equal(t, "Refactor Architecture", summaryRes.TaskCompletion.PerTask[0].Title)
+		assert.Equal(t, 70.0, summaryRes.TaskCompletion.PerTask[0].Rate)
+
+		// Habits: Total completed 1 / tracked 2 = 50.0%
+		assert.Equal(t, 50.0, summaryRes.HabitCompletion.Overall)
+		require.Len(t, summaryRes.HabitCompletion.PerHabit, 1)
+		assert.Equal(t, "Morning Meditation", summaryRes.HabitCompletion.PerHabit[0].Title)
+		assert.Equal(t, 50.0, summaryRes.HabitCompletion.PerHabit[0].Rate)
+
+		// Mode distribution: Growth: 2
+		assert.Equal(t, 2, summaryRes.ModeDistribution["Growth"])
+
+		// Journals: 1 entry
+		require.Len(t, summaryRes.Journals, 1)
+		assert.Equal(t, "2026-07-20", summaryRes.Journals[0].Date)
+		assert.Equal(t, "Great focus today!", summaryRes.Journals[0].OneLineReview)
+
+		// 2. Monthly summary request
+		wMonth := testutil.DoRequest(router, "GET", "/api/v1/analytics/summary?period=monthly&date=2026-07-15", nil)
+		assert.Equal(t, http.StatusOK, wMonth.Code)
+
+		var monthRes analytics.SummaryResponse
+		err = json.Unmarshal(wMonth.Body.Bytes(), &monthRes)
+		require.NoError(t, err)
+
+		assert.Equal(t, "monthly", monthRes.Period)
+		assert.Equal(t, "2026-07-01", monthRes.StartDate)
+		assert.Equal(t, "2026-07-31", monthRes.EndDate)
+		assert.Equal(t, 31, monthRes.TotalDays)
+		assert.Equal(t, 2, monthRes.RecordedDays)
+
+		// 3. Invalid Period Error
+		wInvalid := testutil.DoRequest(router, "GET", "/api/v1/analytics/summary?period=yearly", nil)
+		assert.Equal(t, http.StatusBadRequest, wInvalid.Code)
+	})
 }

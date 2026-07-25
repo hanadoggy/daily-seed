@@ -5,14 +5,12 @@ import { JournalSection } from '@/features/journal/JournalSection';
 import { Calendar } from '@/features/calendar/Calendar';
 import { ProgressTracker } from '@/features/progress/ProgressTracker';
 import { useAppStore } from '@/store/useAppStore';
-import { useIsReadOnly } from '@/hooks/useIsReadOnly';
 import { todayJST } from '@/lib/dayjs';
 import { Pencil, Eye, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function MainPage() {
   const { tasks, habits, selectedDate, isAdminMode, toggleAdminMode } = useAppStore();
-  const isReadOnly = useIsReadOnly();
   const isToday = selectedDate === todayJST();
 
   return (

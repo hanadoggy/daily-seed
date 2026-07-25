@@ -197,12 +197,12 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                           <div className="flex items-center gap-2">
                             {WEATHER_OPTIONS.map((opt) => {
                               if (!task.conditions.weather.includes(opt.value)) return null;
-                              return <opt.icon key={opt.value} className={cn('h-4 w-4', opt.color)} title={opt.label} />;
+                              return <span key={opt.value} title={opt.label}><opt.icon className={cn('h-4 w-4', opt.color)} /></span>;
                             })}
                             <div className="mx-1 h-3 w-px bg-border" />
                             {MODE_OPTIONS.map((opt) => {
                               if (!task.conditions.mode.includes(opt.value)) return null;
-                              return <opt.icon key={opt.value} className={cn('h-4 w-4', opt.color)} title={opt.label} />;
+                              return <span key={opt.value} title={opt.label}><opt.icon className={cn('h-4 w-4', opt.color)} /></span>;
                             })}
                           </div>
                         </div>

@@ -84,3 +84,51 @@ export interface HeatmapDay {
 export interface HeatmapResponse {
   days: HeatmapDay[];
 }
+
+export interface TaskStat {
+  taskId: string;
+  title: string;
+  section: 'japanese' | 'dev' | 'self_dev' | 'exercise' | string;
+  type: 'quantitative' | 'boolean';
+  rate: number;
+  completed: number;
+  target: number;
+}
+
+export interface TaskCompletionStats {
+  overall: number;
+  sections: Record<string, number>;
+  perTask: TaskStat[];
+}
+
+export interface HabitStat {
+  habitId: string;
+  title: string;
+  category: string;
+  rate: number;
+  completed: number;
+  total: number;
+}
+
+export interface HabitCompletionStats {
+  overall: number;
+  perHabit: HabitStat[];
+}
+
+export interface JournalEntry {
+  date: string;
+  oneLineReview: string;
+  threeLineDiary: string;
+}
+
+export interface SummaryResponse {
+  period: 'weekly' | 'monthly';
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  recordedDays: number;
+  taskCompletion: TaskCompletionStats;
+  habitCompletion: HabitCompletionStats;
+  modeDistribution: Record<string, number>;
+  journals: JournalEntry[];
+}

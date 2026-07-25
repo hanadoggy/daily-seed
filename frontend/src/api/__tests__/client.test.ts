@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as client from '../client';
-import { Task, Habit } from '../../types';
+import type { Task } from '../../types';
 
 describe('API Client', () => {
   const mockFetch = vi.fn();
@@ -65,13 +65,13 @@ describe('API Client', () => {
   describe('patchDailyRecord', () => {
     it('makes correct PATCH request', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-      await client.patchDailyRecord('2023-10-10', { context: { mode: 'Growth' } });
+      await client.patchDailyRecord('2023-10-10', { context: { mode: 'Growth', weather: 'sunny' } });
       
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/daily/2023-10-10'),
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ context: { mode: 'Growth' } }),
+          body: JSON.stringify({ context: { mode: 'Growth', weather: 'sunny' } }),
         })
       );
     });
@@ -88,7 +88,7 @@ describe('API Client', () => {
   describe('createTask', () => {
     it('makes correct POST request', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-      const task = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
+      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
       await client.createTask(task);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/tasks'),
@@ -100,7 +100,7 @@ describe('API Client', () => {
   describe('updateTask', () => {
     it('makes correct PUT request', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-      const task = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
+      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
       await client.updateTask('id1', task);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/tasks/id1'),

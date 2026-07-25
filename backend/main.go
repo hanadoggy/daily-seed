@@ -68,7 +68,7 @@ func main() {
 	habitHandler := habit.NewHabitHandler(habitStore)
 	taskHandler := task.NewTaskHandler(taskStore, dailyStore, dailyStore)
 	dailyHandler := daily.NewDailyHandler(dailyStore, taskStore, habitStore)
-	analyticsHandler := analytics.NewAnalyticsHandler(dailyStore, taskStore)
+	analyticsHandler := analytics.NewAnalyticsHandler(dailyStore, taskStore, habitStore)
 
 	// Gin setup.
 	gin.SetMode(gin.ReleaseMode)

@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAnalyticsStore } from '../useAnalyticsStore';
 import * as apiClient from '@/api/client';
+import type { SummaryResponse } from '@/types';
 
 vi.mock('@/api/client', () => ({
   fetchHeatmap: vi.fn(),
+  fetchSummary: vi.fn(),
 }));
 
 describe('useAnalyticsStore', () => {
@@ -13,6 +15,11 @@ describe('useAnalyticsStore', () => {
       heatmapData: null,
       isLoading: false,
       error: null,
+      summaryData: null,
+      summaryPeriod: 'weekly',
+      summaryDate: '2026-07-25',
+      isSummaryLoading: false,
+      summaryError: null,
     });
   });
 
@@ -21,6 +28,8 @@ describe('useAnalyticsStore', () => {
     expect(state.heatmapData).toBeNull();
     expect(state.isLoading).toBe(false);
     expect(state.error).toBeNull();
+    expect(state.summaryData).toBeNull();
+    expect(state.summaryPeriod).toBe('weekly');
   });
 
   it('handles fetchHeatmapData success', async () => {
@@ -61,13 +70,33 @@ describe('useAnalyticsStore', () => {
     expect(state.error).toBe('Server internal error occurred');
   });
 
-  it('handles fetchHeatmapData failure with generic fallback error message', async () => {
-    vi.mocked(apiClient.fetchHeatmap).mockRejectedValueOnce(new Error('Network error'));
+  it('handles fetchSummaryData success and navigation', async () => {
+    const mockSummary: SummaryResponse = {
+      period: 'weekly',
+      startDate: '2026-07-19',
+      endDate: '2026-07-25',
+      totalDays: 7,
+      recordedDays: 2,
+      taskCompletion: { overall: 100, sections: {}, perTask: [] },
+      habitCompletion: { overall: 100, perHabit: [] },
+      modeDistribution: { Growth: 2 },
+      journals: [],
+    };
+    vi.mocked(apiClient.fetchSummary).mockResolvedValue(mockSummary);
 
-    await useAnalyticsStore.getState().fetchHeatmapData(2026);
+    await useAnalyticsStore.getState().fetchSummaryData('weekly', '2026-07-25');
 
-    const state = useAnalyticsStore.getState();
-    expect(state.isLoading).toBe(false);
-    expect(state.error).toBe('Failed to fetch heatmap data');
+    let state = useAnalyticsStore.getState();
+    expect(state.isSummaryLoading).toBe(false);
+    expect(state.summaryData).toEqual(mockSummary);
+    expect(apiClient.fetchSummary).toHaveBeenCalledWith('weekly', '2026-07-25');
+
+    // Test period toggle
+    useAnalyticsStore.getState().setSummaryPeriod('monthly');
+    expect(apiClient.fetchSummary).toHaveBeenCalledWith('monthly', '2026-07-25');
+
+    // Test navigate summary
+    useAnalyticsStore.getState().navigateSummary('prev');
+    expect(apiClient.fetchSummary).toHaveBeenCalled();
   });
 });

@@ -116,3 +116,12 @@ export function deleteHabit(id: string): Promise<void> {
 export function fetchHeatmap(year: number): Promise<import('../types').HeatmapResponse> {
   return request<import('../types').HeatmapResponse>(`/analytics/heatmap?year=${year}`);
 }
+
+export function fetchSummary(
+  period: 'weekly' | 'monthly',
+  date: string,
+): Promise<import('../types').SummaryResponse> {
+  return request<import('../types').SummaryResponse>(
+    `/analytics/summary?period=${period}&date=${date}`,
+  );
+}

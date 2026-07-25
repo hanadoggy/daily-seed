@@ -158,7 +158,7 @@ describe('TaskSlice', () => {
     vi.mocked(apiClient.migrateTask).mockResolvedValueOnce(mockResult as any);
     vi.mocked(apiClient.fetchTaskProgress).mockResolvedValueOnce([]);
 
-    await useAppStore.getState().migrateTask('t1', '2023-10-10');
+    await useAppStore.getState().migrateTask('t1');
 
     expect(useAppStore.getState().tasks).toContainEqual(mockResult.archivedTask);
     expect(useAppStore.getState().tasks).toContainEqual(mockResult.newTask);
@@ -180,7 +180,7 @@ describe('TaskSlice', () => {
     useAppStore.setState({ tasks: [existingTask as any], error: null });
     vi.mocked(apiClient.migrateTask).mockRejectedValueOnce(new Error('Migration failed'));
 
-    await useAppStore.getState().migrateTask('t1', '2023-10-10');
+    await useAppStore.getState().migrateTask('t1');
 
     expect(useAppStore.getState().tasks).toHaveLength(1);
     expect(useAppStore.getState().tasks[0].id).toBe('t1');

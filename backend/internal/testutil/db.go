@@ -93,7 +93,7 @@ func SetupRouter(db *mongo.Database) *gin.Engine {
 	habitHandler := habit.NewHabitHandler(habitStore)
 	taskHandler := task.NewTaskHandler(taskStore, dailyStore, dailyStore)
 	dailyHandler := daily.NewDailyHandler(dailyStore, taskStore, habitStore)
-	analyticsHandler := analytics.NewAnalyticsHandler(dailyStore, taskStore)
+	analyticsHandler := analytics.NewAnalyticsHandler(dailyStore, taskStore, habitStore)
 
 	v1 := r.Group("/api/v1")
 	habitHandler.RegisterRoutes(v1)
