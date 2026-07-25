@@ -266,6 +266,21 @@ export function SummaryDashboard({
             <h3 className="font-bold text-base">Habit Breakdown</h3>
           </div>
 
+          {/* Categories Breakdown */}
+          {data.habitCompletion.categories && Object.keys(data.habitCompletion.categories).length > 0 && (
+            <div className="space-y-2 pt-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase">Category Averages</span>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(data.habitCompletion.categories).map(([cat, rate]) => (
+                  <div key={cat} className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="text-xs text-muted-foreground capitalize">{cat}</div>
+                    <div className="text-lg font-bold text-amber-500">{rate}%</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2 pt-2">
             <span className="text-xs font-semibold text-muted-foreground uppercase">Individual Habits</span>
             {data.habitCompletion.perHabit.length > 0 ? (

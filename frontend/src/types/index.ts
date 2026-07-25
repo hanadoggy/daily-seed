@@ -112,6 +112,7 @@ export interface HabitStat {
 
 export interface HabitCompletionStats {
   overall: number;
+  categories: Record<string, number>;
   perHabit: HabitStat[];
 }
 

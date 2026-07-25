@@ -26,6 +26,7 @@ const mockSummaryData: SummaryResponse = {
   },
   habitCompletion: {
     overall: 66.7,
+    categories: { Health: 66.7 },
     perHabit: [
       {
         habitId: 'h1',
@@ -77,10 +78,12 @@ describe('SummaryDashboard component', () => {
 
     // Overall stats
     expect(screen.getByText('80.5%')).toBeInTheDocument();
-    expect(screen.getByText('66.7%')).toBeInTheDocument();
+    expect(screen.getAllByText('66.7%').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('3')).toBeInTheDocument(); // recorded days
 
-    // Individual breakdown
+    // Individual breakdown & Section/Category averages
+    expect(screen.getByText('Section Averages')).toBeInTheDocument();
+    expect(screen.getByText('Category Averages')).toBeInTheDocument();
     expect(screen.getByText('Study Go')).toBeInTheDocument();
     expect(screen.getByText('Exercise')).toBeInTheDocument();
 

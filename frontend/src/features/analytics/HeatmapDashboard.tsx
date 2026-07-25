@@ -22,7 +22,7 @@ export function HeatmapDashboard({ data, isLoading }: HeatmapDashboardProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('overall');
 
   const { maxIntensity, weeks } = useMemo(() => {
-    if (!data || !data.days) return { maxIntensity: 0, weeks: [] };
+    if (!data || !data.days || data.days.length === 0) return { maxIntensity: 0, weeks: [] };
 
     let max = 1;
     const allDays = data.days;

@@ -19,7 +19,7 @@ vi.mock('@/api/client', () => ({
   fetchTasks: vi.fn().mockResolvedValue([]),
   fetchHabits: vi.fn().mockResolvedValue([]),
   fetchTaskProgress: vi.fn().mockResolvedValue([]),
-  fetchHeatmap: vi.fn().mockResolvedValue({ days: [] }),
+  fetchHeatmap: vi.fn().mockResolvedValue({ days: [{ date: '2026-01-01', total: 0, habits: 0, sectionCounts: {} }] }),
   fetchSummary: vi.fn().mockResolvedValue({
     period: 'weekly',
     startDate: '2026-07-19',
@@ -82,5 +82,17 @@ describe('App component & Header mode button', () => {
 
     const adminModeBtn = await screen.findByRole('button', { name: /admin mode/i });
     expect(adminModeBtn).toBeInTheDocument();
+  });
+
+  it('does not render Mode button in header when on /analytics route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/analytics']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('button', { name: /edit mode/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /view mode/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /admin mode/i })).not.toBeInTheDocument();
   });
 });

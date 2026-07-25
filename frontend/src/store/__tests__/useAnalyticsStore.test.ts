@@ -78,7 +78,7 @@ describe('useAnalyticsStore', () => {
       totalDays: 7,
       recordedDays: 2,
       taskCompletion: { overall: 100, sections: {}, perTask: [] },
-      habitCompletion: { overall: 100, perHabit: [] },
+      habitCompletion: { overall: 100, categories: {}, perHabit: [] },
       modeDistribution: { Growth: 2 },
       journals: [],
     };

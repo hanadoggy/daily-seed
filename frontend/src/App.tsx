@@ -60,36 +60,38 @@ function App() {
             </Link>
             
             <div className="ml-auto flex items-center gap-2">
-              {/* Edit / View / Admin Mode Button */}
-              {isToday ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-primary/30 text-primary bg-primary/5 cursor-default"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit Mode
-                </Button>
-              ) : isAdminMode ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
-                  onClick={toggleAdminMode}
-                >
-                  <Unlock className="h-3.5 w-3.5" />
-                  Admin Mode
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 border-accent/40 text-accent-foreground hover:bg-accent/10"
-                  onClick={toggleAdminMode}
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  View Mode
-                </Button>
+              {/* Edit / View / Admin Mode Button (Dashboard only) */}
+              {!isAnalytics && (
+                isToday ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-primary/30 text-primary bg-primary/5 cursor-default"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit Mode
+                  </Button>
+                ) : isAdminMode ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+                    onClick={toggleAdminMode}
+                  >
+                    <Unlock className="h-3.5 w-3.5" />
+                    Admin Mode
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-accent/40 text-accent-foreground hover:bg-accent/10"
+                    onClick={toggleAdminMode}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    View Mode
+                  </Button>
+                )
               )}
 
               <ThemeSwitcher />

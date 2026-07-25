@@ -159,6 +159,7 @@ func TestAnalyticsHandler_Slice(t *testing.T) {
 
 		// Habits: Total completed 1 / tracked 2 = 50.0%
 		assert.Equal(t, 50.0, summaryRes.HabitCompletion.Overall)
+		assert.Equal(t, 50.0, summaryRes.HabitCompletion.Categories["Mindfulness"])
 		require.Len(t, summaryRes.HabitCompletion.PerHabit, 1)
 		assert.Equal(t, "Morning Meditation", summaryRes.HabitCompletion.PerHabit[0].Title)
 		assert.Equal(t, 50.0, summaryRes.HabitCompletion.PerHabit[0].Rate)

@@ -29,8 +29,9 @@ type TaskStat struct {
 }
 
 type HabitCompletionStats struct {
-	Overall  float64     `json:"overall"`  // 전체 평균 습관 완료율 (%)
-	PerHabit []HabitStat `json:"perHabit"` // 개별 습관별 완료율
+	Overall    float64            `json:"overall"`    // 전체 평균 습관 완료율 (%)
+	Categories map[string]float64 `json:"categories"` // 카테고리별 평균 습관 완료율 (%)
+	PerHabit   []HabitStat        `json:"perHabit"`   // 개별 습관별 완료율
 }
 
 type HabitStat struct {

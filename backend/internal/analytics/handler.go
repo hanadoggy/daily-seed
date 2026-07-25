@@ -248,6 +248,9 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 	totalHabitCompleted := 0
 	totalHabitsTracked := 0
 
+	categoryCompleted := make(map[string]int)
+	categoryTotal := make(map[string]int)
+
 	for _, rec := range records {
 		if rec.Context.Mode != "" {
 			modeDistribution[string(rec.Context.Mode)]++
@@ -286,15 +289,23 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 		}
 
 		for _, hEntry := range rec.Habits {
+			hMaster, exists := habitMap[hEntry.HabitID]
+			category := "General"
+			if exists && hMaster.Category != "" {
+				category = hMaster.Category
+			}
+
 			if _, ok := habitAggMap[hEntry.HabitID]; !ok {
 				habitAggMap[hEntry.HabitID] = &habitStatAgg{}
 			}
 			habitAggMap[hEntry.HabitID].Total++
 			totalHabitsTracked++
+			categoryTotal[category]++
 
 			if hEntry.IsCompleted {
 				habitAggMap[hEntry.HabitID].Completed++
 				totalHabitCompleted++
+				categoryCompleted[category]++
 			}
 		}
 	}
@@ -348,6 +359,15 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 		overallHabitRate = round1(float64(totalHabitCompleted) / float64(totalHabitsTracked) * 100)
 	}
 
+	categoryRates := make(map[string]float64)
+	for cat, total := range categoryTotal {
+		if total > 0 {
+			categoryRates[cat] = round1(float64(categoryCompleted[cat]) / float64(total) * 100)
+		} else {
+			categoryRates[cat] = 0.0
+		}
+	}
+
 	perHabitStats := make([]HabitStat, 0)
 	for hID, agg := range habitAggMap {
 		hMaster, exists := habitMap[hID]
@@ -385,8 +405,9 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 			PerTask:  perTaskStats,
 		},
 		HabitCompletion: HabitCompletionStats{
-			Overall:  overallHabitRate,
-			PerHabit: perHabitStats,
+			Overall:    overallHabitRate,
+			Categories: categoryRates,
+			PerHabit:   perHabitStats,
 		},
 		ModeDistribution: modeDistribution,
 		Journals:         journals,
