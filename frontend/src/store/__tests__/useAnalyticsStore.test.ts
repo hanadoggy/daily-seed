@@ -6,6 +6,7 @@ import type { SummaryResponse } from '@/types';
 vi.mock('@/api/client', () => ({
   fetchHeatmap: vi.fn(),
   fetchSummary: vi.fn(),
+  fetchStreaks: vi.fn(),
 }));
 
 describe('useAnalyticsStore', () => {
@@ -20,6 +21,9 @@ describe('useAnalyticsStore', () => {
       summaryDate: '2026-07-25',
       isSummaryLoading: false,
       summaryError: null,
+      streakData: null,
+      isStreakLoading: false,
+      streakError: null,
     });
   });
 
@@ -30,6 +34,37 @@ describe('useAnalyticsStore', () => {
     expect(state.error).toBeNull();
     expect(state.summaryData).toBeNull();
     expect(state.summaryPeriod).toBe('weekly');
+    expect(state.streakData).toBeNull();
+    expect(state.isStreakLoading).toBe(false);
+  });
+
+  it('handles fetchStreakData success', async () => {
+    const mockStreaks = {
+      habits: [
+        {
+          habitId: 'h1',
+          title: 'Meditation',
+          category: 'Mindfulness',
+          currentStreak: 7,
+          longestStreak: 7,
+          totalDays: 7,
+          lastCompleted: '2026-07-25',
+          milestones: [7],
+        },
+      ],
+    };
+    vi.mocked(apiClient.fetchStreaks).mockResolvedValueOnce(mockStreaks);
+
+    const promise = useAnalyticsStore.getState().fetchStreakData();
+    expect(useAnalyticsStore.getState().isStreakLoading).toBe(true);
+
+    await promise;
+
+    const state = useAnalyticsStore.getState();
+    expect(state.isStreakLoading).toBe(false);
+    expect(state.streakData).toEqual(mockStreaks);
+    expect(state.streakError).toBeNull();
+    expect(apiClient.fetchStreaks).toHaveBeenCalled();
   });
 
   it('handles fetchHeatmapData success', async () => {

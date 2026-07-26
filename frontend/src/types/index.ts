@@ -133,3 +133,18 @@ export interface SummaryResponse {
   modeDistribution: Record<string, number>;
   journals: JournalEntry[];
 }
+
+export interface HabitStreak {
+  habitId: string;
+  title: string;
+  category: string;
+  currentStreak: number;
+  longestStreak: number;
+  totalDays: number;
+  lastCompleted: string;
+  milestones: number[];
+}
+
+export interface StreakResponse {
+  habits: HabitStreak[];
+}

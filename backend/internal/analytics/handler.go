@@ -12,6 +12,7 @@ import (
 	"daily-seed/internal/daily"
 	"daily-seed/internal/habit"
 	"daily-seed/internal/task"
+	"daily-seed/pkg/jst"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -36,6 +37,7 @@ func (h *AnalyticsHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	{
 		analyticsGroup.GET("/heatmap", h.GetHeatmap)
 		analyticsGroup.GET("/summary", h.GetSummary)
+		analyticsGroup.GET("/streaks", h.GetStreaks)
 	}
 }
 
@@ -412,4 +414,165 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 		ModeDistribution: modeDistribution,
 		Journals:         journals,
 	}, nil
+}
+
+func (h *AnalyticsHandler) GetStreaks(c *gin.Context) {
+	res, err := h.getStreakData(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
+			Code:    "INTERNAL_ERROR",
+			Message: "failed to get streak data",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+func getMilestones(streak int) []int {
+	milestones := []int{}
+	fixed := []int{7, 30, 100}
+	for _, m := range fixed {
+		if streak >= m {
+			milestones = append(milestones, m)
+		}
+	}
+	for yr := 1; ; yr++ {
+		m := yr * 365
+		if streak >= m {
+			milestones = append(milestones, m)
+		} else {
+			break
+		}
+	}
+	return milestones
+}
+
+func (h *AnalyticsHandler) getStreakData(ctx context.Context) (*StreakResponse, error) {
+	habits, err := h.habitStore.FindAll(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch habits: %w", err)
+	}
+
+	activeHabits := make([]habit.Habit, 0)
+	for _, hb := range habits {
+		if hb.Status == "active" {
+			activeHabits = append(activeHabits, hb)
+		}
+	}
+
+	if len(activeHabits) == 0 {
+		return &StreakResponse{Habits: []HabitStreak{}}, nil
+	}
+
+	records, err := h.dailyStore.FindBetweenDates(ctx, "2000-01-01", "2099-12-31")
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch daily records: %w", err)
+	}
+
+	recordMap := make(map[string]map[primitive.ObjectID]bool)
+	minDate := jst.TodayString()
+	maxDate := jst.TodayString()
+
+	for _, rec := range records {
+		if rec.Date < minDate {
+			minDate = rec.Date
+		}
+		if rec.Date > maxDate {
+			maxDate = rec.Date
+		}
+		hMap := make(map[primitive.ObjectID]bool)
+		for _, hb := range rec.Habits {
+			if hb.IsCompleted {
+				hMap[hb.HabitID] = true
+			}
+		}
+		recordMap[rec.Date] = hMap
+	}
+
+	todayStr := jst.TodayString()
+	habitStreaks := make([]HabitStreak, 0, len(activeHabits))
+
+	for _, hb := range activeHabits {
+		totalDays := 0
+		lastCompleted := ""
+
+		startT, errStart := time.Parse("2006-01-02", minDate)
+		endT, errEnd := time.Parse("2006-01-02", maxDate)
+
+		longestStreak := 0
+		currentRun := 0
+
+		if errStart == nil && errEnd == nil {
+			for d := startT; !d.After(endT); d = d.AddDate(0, 0, 1) {
+				dateStr := d.Format("2006-01-02")
+				isDone := recordMap[dateStr] != nil && recordMap[dateStr][hb.ID]
+
+				if isDone {
+					currentRun++
+					totalDays++
+					lastCompleted = dateStr
+					if currentRun > longestStreak {
+						longestStreak = currentRun
+					}
+				} else {
+					currentRun = 0
+				}
+			}
+		}
+
+		currentStreak := 0
+		todayDone := recordMap[todayStr] != nil && recordMap[todayStr][hb.ID]
+		yesterdayStr := ""
+		if tT, err := time.Parse("2006-01-02", todayStr); err == nil {
+			yesterdayStr = tT.AddDate(0, 0, -1).Format("2006-01-02")
+		}
+		yesterdayDone := yesterdayStr != "" && recordMap[yesterdayStr] != nil && recordMap[yesterdayStr][hb.ID]
+
+		if todayDone {
+			curDate := todayStr
+			for {
+				if recordMap[curDate] != nil && recordMap[curDate][hb.ID] {
+					currentStreak++
+					if t, err := time.Parse("2006-01-02", curDate); err == nil {
+						curDate = t.AddDate(0, 0, -1).Format("2006-01-02")
+					} else {
+						break
+					}
+				} else {
+					break
+				}
+			}
+		} else if yesterdayDone {
+			curDate := yesterdayStr
+			for {
+				if recordMap[curDate] != nil && recordMap[curDate][hb.ID] {
+					currentStreak++
+					if t, err := time.Parse("2006-01-02", curDate); err == nil {
+						curDate = t.AddDate(0, 0, -1).Format("2006-01-02")
+					} else {
+						break
+					}
+				} else {
+					break
+				}
+			}
+		}
+
+		milestones := getMilestones(longestStreak)
+
+		habitStreaks = append(habitStreaks, HabitStreak{
+			HabitID:       hb.ID.Hex(),
+			Title:         hb.Title,
+			Category:      hb.Category,
+			CurrentStreak: currentStreak,
+			LongestStreak: longestStreak,
+			TotalDays:     totalDays,
+			LastCompleted: lastCompleted,
+			Milestones:    milestones,
+		})
+	}
+
+	return &StreakResponse{Habits: habitStreaks}, nil
 }

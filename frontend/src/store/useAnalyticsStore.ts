@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { fetchHeatmap, fetchSummary } from '@/api/client';
-import type { HeatmapResponse, SummaryResponse } from '@/types';
+import { fetchHeatmap, fetchSummary, fetchStreaks } from '@/api/client';
+import type { HeatmapResponse, SummaryResponse, StreakResponse } from '@/types';
 import dayjs from 'dayjs';
 
 interface AnalyticsState {
@@ -14,8 +14,13 @@ interface AnalyticsState {
   isSummaryLoading: boolean;
   summaryError: string | null;
 
+  streakData: StreakResponse | null;
+  isStreakLoading: boolean;
+  streakError: string | null;
+
   fetchHeatmapData: (year: number) => Promise<void>;
   fetchSummaryData: (period?: 'weekly' | 'monthly', date?: string) => Promise<void>;
+  fetchStreakData: () => Promise<void>;
   setSummaryPeriod: (period: 'weekly' | 'monthly') => void;
   navigateSummary: (direction: 'prev' | 'next') => void;
 }
@@ -30,6 +35,10 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
   summaryDate: dayjs().format('YYYY-MM-DD'),
   isSummaryLoading: false,
   summaryError: null,
+
+  streakData: null,
+  isStreakLoading: false,
+  streakError: null,
 
   fetchHeatmapData: async (year: number) => {
     set({ isLoading: true, error: null });
@@ -61,6 +70,19 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       set({
         isSummaryLoading: false,
         summaryError: err.response?.data?.message || err.message || 'Failed to fetch summary data',
+      });
+    }
+  },
+
+  fetchStreakData: async () => {
+    set({ isStreakLoading: true, streakError: null });
+    try {
+      const data = await fetchStreaks();
+      set({ streakData: data, isStreakLoading: false });
+    } catch (err: any) {
+      set({
+        isStreakLoading: false,
+        streakError: err.response?.data?.message || err.message || 'Failed to fetch streak data',
       });
     }
   },

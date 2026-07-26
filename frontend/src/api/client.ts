@@ -125,3 +125,7 @@ export function fetchSummary(
     `/analytics/summary?period=${period}&date=${date}`,
   );
 }
+
+export function fetchStreaks(): Promise<import('../types').StreakResponse> {
+  return request<import('../types').StreakResponse>('/analytics/streaks');
+}

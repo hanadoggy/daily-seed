@@ -190,4 +190,49 @@ func TestAnalyticsHandler_Slice(t *testing.T) {
 		wInvalid := testutil.DoRequest(router, "GET", "/api/v1/analytics/summary?period=yearly", nil)
 		assert.Equal(t, http.StatusBadRequest, wInvalid.Code)
 	})
+
+	t.Run("GET /api/v1/analytics/streaks", func(t *testing.T) {
+		testutil.ClearDB(ctx)
+		router := testutil.SetupRouter(testutil.DB)
+
+		// Active habit
+		habitActive := testutil.SeedHabit(ctx, testutil.DB, habit.Habit{
+			Title: "Daily Reading", Category: "Learning", Status: "active",
+		})
+		// Archived habit (should be excluded)
+		testutil.SeedHabit(ctx, testutil.DB, habit.Habit{
+			Title: "Old Habit", Category: "Legacy", Status: "archived",
+		})
+
+		// Seed consecutive records for 7 days
+		todayStr := time.Now().In(time.FixedZone("JST", 9*3600)).Format("2006-01-02")
+		todayTime, _ := time.Parse("2006-01-02", todayStr)
+
+		for i := 6; i >= 0; i-- {
+			dStr := todayTime.AddDate(0, 0, -i).Format("2006-01-02")
+			testutil.SeedDailyRecord(ctx, testutil.DB, daily.DailyRecord{
+				Date: dStr,
+				Habits: []daily.HabitEntry{
+					{HabitID: habitActive, IsCompleted: true},
+				},
+			})
+		}
+
+		w := testutil.DoRequest(router, "GET", "/api/v1/analytics/streaks", nil)
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var streakRes analytics.StreakResponse
+		err := json.Unmarshal(w.Body.Bytes(), &streakRes)
+		require.NoError(t, err)
+
+		require.Len(t, streakRes.Habits, 1)
+		hStreak := streakRes.Habits[0]
+		assert.Equal(t, habitActive.Hex(), hStreak.HabitID)
+		assert.Equal(t, "Daily Reading", hStreak.Title)
+		assert.Equal(t, 7, hStreak.CurrentStreak)
+		assert.Equal(t, 7, hStreak.LongestStreak)
+		assert.Equal(t, 7, hStreak.TotalDays)
+		assert.Equal(t, todayStr, hStreak.LastCompleted)
+		assert.Equal(t, []int{7}, hStreak.Milestones)
+	})
 }

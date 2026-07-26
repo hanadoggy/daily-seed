@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { HeatmapDashboard } from '@/features/analytics/HeatmapDashboard';
 import { SummaryDashboard } from '@/features/analytics/SummaryDashboard';
+import { StreakDashboard } from '@/features/analytics/StreakDashboard';
 import { useAnalyticsStore } from '@/store/useAnalyticsStore';
 import dayjs from 'dayjs';
 
@@ -17,6 +18,10 @@ export function AnalyticsPage() {
     fetchSummaryData,
     setSummaryPeriod,
     navigateSummary,
+    streakData,
+    isStreakLoading,
+    streakError,
+    fetchStreakData,
   } = useAnalyticsStore();
 
   const currentYear = dayjs().year();
@@ -24,7 +29,8 @@ export function AnalyticsPage() {
   useEffect(() => {
     fetchHeatmapData(currentYear);
     fetchSummaryData();
-  }, [fetchHeatmapData, fetchSummaryData, currentYear]);
+    fetchStreakData();
+  }, [fetchHeatmapData, fetchSummaryData, fetchStreakData, currentYear]);
 
   return (
     <main className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
@@ -33,9 +39,9 @@ export function AnalyticsPage() {
         <div className="text-sm text-muted-foreground">{currentYear}</div>
       </div>
 
-      {(error || summaryError) && (
+      {(error || summaryError || streakError) && (
         <div className="rounded-xl border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-          {error || summaryError}
+          {error || summaryError || streakError}
         </div>
       )}
 
@@ -50,6 +56,9 @@ export function AnalyticsPage() {
         onPeriodChange={setSummaryPeriod}
         onNavigate={navigateSummary}
       />
+
+      {/* Habit Streak Tracking */}
+      <StreakDashboard data={streakData} isLoading={isStreakLoading} />
     </main>
   );
 }

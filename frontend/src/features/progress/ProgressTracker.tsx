@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TaskProgress } from '@/types';
+import { HabitStreakWidget } from './HabitStreakWidget';
 
 export function ProgressTracker() {
   const { taskProgress, fetchProgress, migrateTask } = useAppStore();
@@ -130,6 +131,9 @@ export function ProgressTracker() {
           </div>
         </div>
       )}
+
+      {/* Habit Streak Widget */}
+      <HabitStreakWidget />
     </div>
   );
 }
