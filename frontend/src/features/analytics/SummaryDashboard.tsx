@@ -240,9 +240,9 @@ export function SummaryDashboard({
               <div className="space-y-3">
                 {data.taskCompletion.perTask.map((t) => (
                   <div key={t.taskId} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium truncate max-w-[200px]">{t.title}</span>
-                      <span className="text-muted-foreground font-semibold">{t.rate}% ({t.completed}/{t.target})</span>
+                    <div className="flex items-start justify-between gap-2 text-xs">
+                      <span className="font-medium min-w-0 flex-1 break-words leading-snug">{t.title}</span>
+                      <span className="text-muted-foreground font-semibold shrink-0">{t.rate}% ({t.completed}/{t.target})</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                       <div
@@ -287,9 +287,9 @@ export function SummaryDashboard({
               <div className="space-y-3">
                 {data.habitCompletion.perHabit.map((h) => (
                   <div key={h.habitId} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium truncate max-w-[200px]">{h.title}</span>
-                      <span className="text-muted-foreground font-semibold">{h.rate}% ({h.completed}/{h.total}d)</span>
+                    <div className="flex items-start justify-between gap-2 text-xs">
+                      <span className="font-medium min-w-0 flex-1 break-words leading-snug">{h.title}</span>
+                      <span className="text-muted-foreground font-semibold shrink-0">{h.rate}% ({h.completed}/{h.total}d)</span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                       <div

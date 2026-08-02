@@ -88,7 +88,7 @@ describe('API Client', () => {
   describe('createTask', () => {
     it('makes correct POST request', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
+      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', unit: 'units', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
       await client.createTask(task);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/tasks'),
@@ -100,7 +100,7 @@ describe('API Client', () => {
   describe('updateTask', () => {
     it('makes correct PUT request', async () => {
       mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({}) });
-      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
+      const task: Omit<Task, 'id' | 'status'> = { title: 'Test', section: 'dev', type: 'boolean', unit: 'units', metrics: { dailyTarget: 1, totalTarget: 0 }, conditions: { weather: ['sunny'], mode: ['Growth'] }, startDate: '2023-10-10' };
       await client.updateTask('id1', task);
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/tasks/id1'),

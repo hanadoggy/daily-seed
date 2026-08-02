@@ -80,6 +80,7 @@ export function DailyChecklist({ tasks, habits }: DailyChecklistProps) {
                     entry={entry}
                     title={task?.title ?? 'Unknown Task'}
                     type={task?.type ?? 'boolean'}
+                    unit={task?.unit}
                     isReadOnly={isReadOnly}
                     isArchived={task?.status === 'archived'}
                   />

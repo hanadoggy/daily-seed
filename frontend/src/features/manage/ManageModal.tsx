@@ -33,11 +33,13 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
   const [confirmingTaskId, setConfirmingTaskId] = useState<string | null>(null);
   const [confirmingHabitId, setConfirmingHabitId] = useState<string | null>(null);
   const [taskFilter, setTaskFilter] = useState<'active' | 'archived'>('active');
+  const [habitFilter, setHabitFilter] = useState<'active' | 'archived'>('active');
 
   const activeTasks = tasks.filter((t) => t.status === 'active');
   const filteredTasks = tasks.filter((t) => t.status === taskFilter);
-  const activeHabits = habits
-    .filter((h) => h.status === 'active')
+  const activeHabits = habits.filter((h) => h.status === 'active');
+  const filteredHabits = habits
+    .filter((h) => h.status === habitFilter)
     .sort((a, b) => {
       const catOrderA = HABIT_CATEGORIES.findIndex((c) => c.value === a.category);
       const catOrderB = HABIT_CATEGORIES.findIndex((c) => c.value === b.category);
@@ -153,14 +155,43 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                   )}
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  className="mb-5 w-full gap-1.5 py-5"
-                  onClick={() => setFormState({ mode: 'create-habit' })}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Habit
-                </Button>
+                <div className="mb-5 flex items-center justify-between gap-2">
+                  <div className="flex rounded-lg border border-border bg-muted/50 p-1">
+                    <button
+                      onClick={() => setHabitFilter('active')}
+                      className={cn(
+                        'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
+                        habitFilter === 'active'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Active
+                    </button>
+                    <button
+                      onClick={() => setHabitFilter('archived')}
+                      className={cn(
+                        'rounded-md px-4 py-1.5 text-xs font-medium transition-colors',
+                        habitFilter === 'archived'
+                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      Archived
+                    </button>
+                  </div>
+                  {habitFilter === 'active' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setFormState({ mode: 'create-habit' })}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Habit
+                    </Button>
+                  )}
+                </div>
               )}
 
               {/* List */}
@@ -185,7 +216,7 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                             <span>
                               {task.type === 'boolean'
                                 ? 'Yes/No'
-                                : `${task.metrics.dailyTarget}/day`}
+                                : `${task.metrics.dailyTarget} ${task.unit || 'units'}/day`}
                             </span>
                             {task.type === 'quantitative' && task.metrics.totalTarget > 0 && (
                               <>
@@ -259,12 +290,12 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
 
               {activeTab === 'habits' && (
                 <div className="space-y-3">
-                  {activeHabits.length === 0 && (
+                  {filteredHabits.length === 0 && (
                     <p className="py-12 text-center text-sm text-muted-foreground">
-                      No active habits yet. Create one to get started.
+                      No {habitFilter} habits yet.
                     </p>
                   )}
-                  {activeHabits.map((habit) => {
+                  {filteredHabits.map((habit) => {
                     const categoryOption = HABIT_CATEGORIES.find(c => c.value === habit.category);
                     const CategoryIcon = categoryOption?.icon;
                     
@@ -280,16 +311,17 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                           <span>{habit.category}</span>
                         </div>
                       </div>
-                      <div className={`flex gap-1.5 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                        {confirmingHabitId === habit.id ? (
-                          <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1">
-                            <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-7 w-7 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
-                              onClick={() => {
-                                archiveHabit(habit.id);
+                      {habit.status === 'active' && (
+                        <div className={`flex gap-1.5 transition-opacity ${confirmingHabitId === habit.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                          {confirmingHabitId === habit.id ? (
+                            <div className="flex items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1">
+                              <span className="mr-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Sure?</span>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-7 w-7 text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950"
+                                onClick={() => {
+                                  archiveHabit(habit.id);
                                   setConfirmingHabitId(null);
                                 }}
                               >
@@ -304,25 +336,26 @@ export function ManageModal({ open, onOpenChange }: ManageModalProps) {
                                 <X className="h-4 w-4" />
                               </Button>
                             </div>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              onClick={() => setFormState({ mode: 'edit-habit', habit })}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="icon-sm"
-                              onClick={() => setConfirmingHabitId(habit.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
+                          ) : (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => setFormState({ mode: 'edit-habit', habit })}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="destructive"
+                                size="icon-sm"
+                                onClick={() => setConfirmingHabitId(habit.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )})}
                 </div>

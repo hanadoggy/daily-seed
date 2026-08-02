@@ -48,6 +48,11 @@ func (h *TaskHandler) List(c *gin.Context) {
 		return
 	}
 
+	for i := range tasks {
+		if strings.TrimSpace(tasks[i].Unit) == "" {
+			tasks[i].Unit = "units"
+		}
+	}
 	c.JSON(http.StatusOK, tasks)
 }
 
@@ -70,6 +75,9 @@ func (h *TaskHandler) Get(c *gin.Context) {
 		})
 		return
 	}
+	if strings.TrimSpace(task.Unit) == "" {
+		task.Unit = "units"
+	}
 
 	c.JSON(http.StatusOK, task)
 }
@@ -90,6 +98,9 @@ func (h *TaskHandler) Create(c *gin.Context) {
 	}
 	if len(task.Conditions.Mode) == 0 {
 		task.Conditions.Mode = []string{"Growth", "Rest", "Office", "Remote"}
+	}
+	if strings.TrimSpace(task.Unit) == "" {
+		task.Unit = "units"
 	}
 	// Boolean tasks always have dailyTarget = 1.
 	if task.Type == "boolean" {
@@ -171,6 +182,11 @@ func (h *TaskHandler) Update(c *gin.Context) {
 			Message: "task type cannot be changed after creation",
 		})
 		return
+	}
+
+	task.Unit = strings.TrimSpace(task.Unit)
+	if task.Unit == "" {
+		task.Unit = "units"
 	}
 
 	if err := task.Validate(); err != nil {
@@ -376,11 +392,17 @@ func (h *TaskHandler) migrateTask(ctx context.Context, id string, req MigrateTas
 	existing.Status = "archived"
 	existing.EndDate = req.CompletionDate
 
+	unit := existing.Unit
+	if strings.TrimSpace(unit) == "" {
+		unit = "units"
+	}
+
 	newTask := &Task{
 		ID:      primitive.NewObjectID(),
 		Section: existing.Section,
 		Title:   existing.Title,
 		Type:    existing.Type,
+		Unit:    unit,
 		Metrics: TaskMetrics{
 			DailyTarget: existing.Metrics.DailyTarget,
 			TotalTarget: existing.Metrics.TotalTarget,

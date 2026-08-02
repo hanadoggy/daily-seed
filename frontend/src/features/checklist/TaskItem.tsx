@@ -9,11 +9,12 @@ interface TaskItemProps {
   entry: TaskEntry;
   title: string;
   type: 'quantitative' | 'boolean';
+  unit?: string;
   isReadOnly?: boolean;
   isArchived?: boolean;
 }
 
-export function TaskItem({ entry, title, type, isReadOnly, isArchived }: TaskItemProps) {
+export function TaskItem({ entry, title, type, unit, isReadOnly, isArchived }: TaskItemProps) {
   const updateTaskProgress = useAppStore((s) => s.updateTaskProgressOptimistic);
   const disabled = isReadOnly || isArchived;
 
@@ -111,7 +112,7 @@ export function TaskItem({ entry, title, type, isReadOnly, isArchived }: TaskIte
             </Button>
           )}
           <span className="text-xs font-semibold tabular-nums min-w-[3rem] text-center">
-            {entry.actualAmount} / {entry.targetAmount}
+            {entry.actualAmount} / {entry.targetAmount}{unit ? ` ${unit}` : ''}
           </span>
           {!disabled && (
             <Button

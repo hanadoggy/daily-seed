@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { Task } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
@@ -28,14 +28,30 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [title, setTitle] = useState(task?.title ?? '');
   const [section, setSection] = useState<string>(task?.section ?? 'japanese');
   const [type, setType] = useState<string>(task?.type ?? 'quantitative');
-  const [dailyTarget, setDailyTarget] = useState(task?.metrics.dailyTarget ?? 1);
-  const [totalTarget, setTotalTarget] = useState(task?.metrics.totalTarget ?? 0);
-  const [weather, setWeather] = useState<string[]>(task?.conditions.weather ?? ['sunny', 'rainy']);
-  const [mode, setMode] = useState<string[]>(task?.conditions.mode ?? ['Growth', 'Rest', 'Office', 'Remote']);
+  const [unit, setUnit] = useState<string>(task?.unit || 'units');
+  const [dailyTarget, setDailyTarget] = useState(task?.metrics?.dailyTarget ?? 1);
+  const [totalTarget, setTotalTarget] = useState(task?.metrics?.totalTarget ?? 0);
+  const [weather, setWeather] = useState<string[]>(task?.conditions?.weather ?? ['sunny', 'rainy']);
+  const [mode, setMode] = useState<string[]>(task?.conditions?.mode ?? ['Growth', 'Rest', 'Office', 'Remote']);
   const [startDate, setStartDate] = useState<string>(task?.startDate ?? selectedDate);
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (task) {
+      setTitle(task.title ?? '');
+      setSection(task.section ?? 'japanese');
+      setType(task.type ?? 'quantitative');
+      setUnit(task.unit || 'units');
+      setDailyTarget(task.metrics?.dailyTarget ?? 1);
+      setTotalTarget(task.metrics?.totalTarget ?? 0);
+      setWeather(task.conditions?.weather ?? ['sunny', 'rainy']);
+      setMode(task.conditions?.mode ?? ['Growth', 'Rest', 'Office', 'Remote']);
+      setStartDate(task.startDate ?? selectedDate);
+    }
+  }, [task, selectedDate]);
+
   const toggleWeather = (val: string) => {
+    if (isEditing) return;
     if (weather.includes(val)) {
       if (weather.length <= 1) {
         toast.error("최소 1개의 옵션을 선택해야 합니다", { duration: 5000 });
@@ -48,6 +64,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   };
 
   const toggleMode = (val: string) => {
+    if (isEditing) return;
     if (mode.includes(val)) {
       if (mode.length <= 1) {
         toast.error("최소 1개의 옵션을 선택해야 합니다", { duration: 5000 });
@@ -77,6 +94,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
       title: title.trim(),
       section: section as Task['section'],
       type: type as Task['type'],
+      unit: type === 'boolean' ? 'units' : (unit.trim() || 'units'),
       metrics: {
         dailyTarget: type === 'boolean' ? 1 : dailyTarget,
         totalTarget,
@@ -150,9 +168,16 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="task-type" className="text-xs font-medium text-muted-foreground">
-            Type
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="task-type" className="text-xs font-medium text-muted-foreground">
+              Type
+            </label>
+            {!isEditing && (
+              <span className="text-[10px] italic text-muted-foreground/70">
+                Locked after creation
+              </span>
+            )}
+          </div>
           <select
             id="task-type"
             value={type}
@@ -174,9 +199,16 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
-            Weather Condition
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-muted-foreground">
+              Weather Condition
+            </label>
+            {!isEditing && (
+              <span className="text-[10px] italic text-muted-foreground/70">
+                Locked after creation
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-2">
             {WEATHER_OPTIONS.map(({ value, label, icon: Icon, color, bgColor, borderColor }) => {
               const isActive = weather.includes(value);
@@ -185,12 +217,14 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   key={value}
                   type="button"
                   variant="outline"
+                  disabled={isEditing}
                   onClick={() => toggleWeather(value)}
                   className={cn(
                     'w-full gap-2 transition-all duration-300 border',
                     isActive
                       ? `${bgColor} ${borderColor} ${color} shadow-sm`
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
+                    isEditing && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
                   )}
                 >
                   <Icon className={cn('h-4 w-4', isActive && color)} />
@@ -202,9 +236,16 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
-            Context Mode
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-muted-foreground">
+              Context Mode
+            </label>
+            {!isEditing && (
+              <span className="text-[10px] italic text-muted-foreground/70">
+                Locked after creation
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2">
             {MODE_OPTIONS.map(({ value, label, icon: Icon, color, bgColor, borderColor }) => {
               const isActive = mode.includes(value);
@@ -213,12 +254,14 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
                   key={value}
                   type="button"
                   variant="outline"
+                  disabled={isEditing}
                   onClick={() => toggleMode(value)}
                   className={cn(
                     'w-full h-9 transition-all duration-300 border flex items-center justify-center',
                     isActive
                       ? `${bgColor} ${borderColor} ${color} shadow-sm`
                       : 'border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground',
+                    isEditing && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
                   )}
                   title={label}
                 >
@@ -231,32 +274,49 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
       </div>
 
       {type === 'quantitative' && (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
           <div className="space-y-1.5">
-            <label htmlFor="task-daily-target" className="text-xs font-medium text-muted-foreground">
-              Daily Target
+            <label htmlFor="task-unit" className="text-xs font-medium text-muted-foreground">
+              Unit
             </label>
             <input
-              id="task-daily-target"
-              type="number"
-              min={1}
-              value={dailyTarget}
-              onChange={(e) => setDailyTarget(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+              id="task-unit"
+              type="text"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="e.g. pages, mins, exercises"
+              required
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent focus:ring-1 focus:ring-mode-accent/40"
             />
           </div>
-          <div className="space-y-1.5">
-            <label htmlFor="task-total-target" className="text-xs font-medium text-muted-foreground">
-              Total Target
-            </label>
-            <input
-              id="task-total-target"
-              type="number"
-              min={0}
-              value={totalTarget}
-              onChange={(e) => setTotalTarget(Number(e.target.value))}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
-            />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label htmlFor="task-daily-target" className="text-xs font-medium text-muted-foreground">
+                Daily Target
+              </label>
+              <input
+                id="task-daily-target"
+                type="number"
+                min={1}
+                value={dailyTarget}
+                onChange={(e) => setDailyTarget(Number(e.target.value))}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="task-total-target" className="text-xs font-medium text-muted-foreground">
+                Total Target
+              </label>
+              <input
+                id="task-total-target"
+                type="number"
+                min={0}
+                value={totalTarget}
+                onChange={(e) => setTotalTarget(Number(e.target.value))}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-mode-accent"
+              />
+            </div>
           </div>
         </div>
       )}

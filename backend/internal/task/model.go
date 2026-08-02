@@ -14,6 +14,7 @@ type Task struct {
 	Section    string             `json:"section" bson:"section"` // "japanese" | "dev" | "self_dev" | "exercise"
 	Title      string             `json:"title" bson:"title"`
 	Type       string             `json:"type" bson:"type"` // "quantitative" | "boolean"
+	Unit       string             `json:"unit" bson:"unit"`
 	Metrics    TaskMetrics        `json:"metrics" bson:"metrics"`
 	Conditions TaskConditions     `json:"conditions" bson:"conditions"`
 	Status     string             `json:"status" bson:"status"` // "active" | "archived"
@@ -47,6 +48,9 @@ func (t *Task) Validate() error {
 	}
 	if !validTaskTypes[t.Type] {
 		return fmt.Errorf("type must be one of: quantitative, boolean")
+	}
+	if strings.TrimSpace(t.Unit) == "" {
+		return fmt.Errorf("unit is required")
 	}
 	if t.Type == "quantitative" && t.Metrics.DailyTarget <= 0 {
 		return fmt.Errorf("dailyTarget must be positive for quantitative tasks")

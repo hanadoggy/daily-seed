@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Leaf, Settings, BarChart2, Pencil, Eye, Unlock } from 'lucide-react';
+import { Leaf, Settings, BarChart2, Pencil, Eye, Unlock, CalendarDays } from 'lucide-react';
 import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { AutoMigrationPrompt } from '@/features/progress/AutoMigrationPrompt';
 import { ManageModal } from '@/features/manage/ManageModal';
@@ -59,6 +59,24 @@ function App() {
               <h1 className="text-xl font-bold tracking-tight">Daily Seed</h1>
             </Link>
             
+            {!isAnalytics && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isToday}
+                onClick={() => setDateAndFetch(todayJST())}
+                className={cn(
+                  'ml-1 gap-1.5 transition-all',
+                  isToday
+                    ? 'border-mode-accent/30 text-mode-accent/50 bg-mode-accent/5 opacity-60 cursor-not-allowed'
+                    : 'border-mode-accent/60 text-mode-accent bg-mode-accent/10 hover:bg-mode-accent/20 cursor-pointer shadow-sm font-medium'
+                )}
+              >
+                <CalendarDays className="h-3.5 w-3.5" />
+                Today
+              </Button>
+            )}
+
             <div className="ml-auto flex items-center gap-2">
               {/* Edit / View / Admin Mode Button (Dashboard only) */}
               {!isAnalytics && (

@@ -46,10 +46,38 @@ describe('ManageModal', () => {
     expect(screen.queryByText('Archived Task')).not.toBeInTheDocument();
     
     // Switch to archived
-    fireEvent.click(screen.getByText('Archived'));
+    const taskArchivedBtn = screen.getAllByText('Archived')[0];
+    fireEvent.click(taskArchivedBtn);
     
     expect(screen.getByText('Archived Task')).toBeInTheDocument();
     expect(screen.queryByText('Active Task')).not.toBeInTheDocument();
+  });
+
+  it('filters active and archived habits', () => {
+    vi.mocked(useAppStore).mockReturnValue({
+      tasks: [],
+      habits: [
+        { id: 'h1', title: 'Active Habit', category: 'health', status: 'active' },
+        { id: 'h2', title: 'Archived Habit', category: 'health', status: 'archived' },
+      ],
+      archiveTask: mockArchiveTask,
+      archiveHabit: mockArchiveHabit,
+    });
+
+    render(<ManageModal open={true} onOpenChange={vi.fn()} />);
+    
+    // Switch to habits tab
+    fireEvent.click(screen.getByText(/Habits/));
+    
+    expect(screen.getByText('Active Habit')).toBeInTheDocument();
+    expect(screen.queryByText('Archived Habit')).not.toBeInTheDocument();
+    
+    // Switch to archived habits
+    const habitArchivedBtn = screen.getAllByText('Archived')[0];
+    fireEvent.click(habitArchivedBtn);
+    
+    expect(screen.getByText('Archived Habit')).toBeInTheDocument();
+    expect(screen.queryByText('Active Habit')).not.toBeInTheDocument();
   });
 
   it('opens create forms when clicking add buttons', () => {

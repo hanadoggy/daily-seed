@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { Sparkles, Trophy, Award, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface MilestoneCelebrationModalProps {
   isOpen: boolean;

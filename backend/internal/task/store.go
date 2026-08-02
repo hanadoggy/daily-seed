@@ -84,7 +84,19 @@ func (s *TaskStore) Create(ctx context.Context, task *Task) error {
 
 func (s *TaskStore) Update(ctx context.Context, task *Task) error {
 	filter := bson.M{"_id": task.ID}
-	update := bson.M{"$set": task}
+	update := bson.M{
+		"$set": bson.M{
+			"section":    task.Section,
+			"title":      task.Title,
+			"type":       task.Type,
+			"unit":       task.Unit,
+			"metrics":    task.Metrics,
+			"conditions": task.Conditions,
+			"status":     task.Status,
+			"startDate":  task.StartDate,
+			"endDate":    task.EndDate,
+		},
+	}
 	if _, err := s.col.UpdateOne(ctx, filter, update); err != nil {
 		return fmt.Errorf("update task: %w", err)
 	}

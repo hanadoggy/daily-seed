@@ -22,11 +22,12 @@ func TestTaskHandler_Slice(t *testing.T) {
 		testutil.ClearDB(ctx)
 		router := testutil.SetupRouter(testutil.DB)
 
-		// Quantitative Success
+		// Quantitative Success with Custom Unit
 		quantBody := []byte(`{
 			"section": "japanese",
 			"title": "Kanji",
 			"type": "quantitative",
+			"unit": "pages",
 			"metrics": {"dailyTarget": 10, "totalTarget": 100},
 			"startDate": "2026-01-01"
 		}`)
@@ -36,9 +37,10 @@ func TestTaskHandler_Slice(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &created)
 		require.NoError(t, err)
 		assert.Equal(t, 10, created.Metrics.DailyTarget)
+		assert.Equal(t, "pages", created.Unit)
 		assert.Equal(t, []string{"sunny", "rainy"}, created.Conditions.Weather) // defaults applied
 
-		// Boolean Success (dailyTarget override to 1)
+		// Boolean Success (dailyTarget override to 1, default unit "units")
 		boolBody := []byte(`{
 			"section": "exercise",
 			"title": "Pushups",
@@ -51,6 +53,7 @@ func TestTaskHandler_Slice(t *testing.T) {
 		var boolCreated task.Task
 		_ = json.Unmarshal(w.Body.Bytes(), &boolCreated)
 		assert.Equal(t, 1, boolCreated.Metrics.DailyTarget)
+		assert.Equal(t, "units", boolCreated.Unit)
 
 		// Empty Title
 		w = testutil.DoRequest(router, "POST", "/api/v1/tasks", []byte(`{"section":"dev","title":"","type":"boolean","startDate":"2026-01-01"}`))

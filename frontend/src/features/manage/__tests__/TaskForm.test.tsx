@@ -101,15 +101,52 @@ describe('TaskForm', () => {
     });
   });
 
-  it('can toggle type and set metrics', async () => {
+  it('displays locked indicator on creation and includes unit field', async () => {
     render(<TaskForm onClose={mockOnClose} />);
     
-    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
-    fireEvent.change(titleInput, { target: { value: 'Read Pages' } });
+    // Check locked indicators
+    expect(screen.getAllByText('Locked after creation')).toHaveLength(3);
     
-    // Select quantitative type (since type defaults to boolean maybe?)
-    // Actually the default is 'quantitative' in the form, let's verify.
-    // Wait, let's check the type switch logic.
-    // It's a SegmentedControl or similar?
+    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
+    fireEvent.change(titleInput, { target: { value: 'Read Book' } });
+    
+    const unitInput = screen.getByPlaceholderText('e.g. pages, mins, exercises');
+    fireEvent.change(unitInput, { target: { value: 'pages' } });
+    
+    const submitBtn = screen.getByRole('button', { name: 'Create Task' });
+    fireEvent.click(submitBtn);
+    
+    await waitFor(() => {
+      expect(mockAddTask).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Read Book',
+        unit: 'pages',
+      }));
+    });
+  });
+
+  it('disables type, weather, and mode in edit mode', () => {
+    const existingTask = {
+      id: 't1',
+      title: 'Existing Task',
+      section: 'dev',
+      type: 'quantitative',
+      unit: 'pages',
+      metrics: { dailyTarget: 10, totalTarget: 100 },
+      conditions: { mode: ['Growth'], weather: ['sunny'] },
+      startDate: '2026-01-01',
+    };
+    
+    render(<TaskForm task={existingTask as any} onClose={mockOnClose} />);
+    
+    // Locked after creation indicators should not be present in edit mode
+    expect(screen.queryByText('Locked after creation')).not.toBeInTheDocument();
+
+    // Type select is disabled
+    const typeSelect = screen.getByLabelText('Type');
+    expect((typeSelect as HTMLSelectElement).disabled).toBe(true);
+
+    // Weather and Mode buttons are disabled
+    const sunnyButton = screen.getByRole('button', { name: 'Sunny' });
+    expect((sunnyButton as HTMLButtonElement).disabled).toBe(true);
   });
 });

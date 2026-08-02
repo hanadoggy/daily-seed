@@ -29,6 +29,7 @@ export interface Task {
   section: 'japanese' | 'dev' | 'self_dev' | 'exercise';
   title: string;
   type: 'quantitative' | 'boolean';
+  unit: string;
   metrics: TaskMetrics;
   conditions: TaskConditions;
   status: 'active' | 'archived';
