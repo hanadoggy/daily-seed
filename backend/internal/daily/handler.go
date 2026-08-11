@@ -6,6 +6,7 @@ import (
 	"daily-seed/internal/habit"
 	"daily-seed/internal/task"
 	"daily-seed/pkg/jst"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -17,7 +18,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+var (
+	dateRegex         = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
+	ErrRecordNotFound = errors.New("daily record not found")
+)
 
 type DailyHandler struct {
 	store      *DailyStore
@@ -42,6 +46,11 @@ func (h *DailyHandler) RegisterRoutes(rg *gin.RouterGroup) {
 func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
 	yearStr := c.Query("year")
 	monthStr := c.Query("month")
+
+	if yearStr == "" || monthStr == "" {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_QUERY", Message: "Missing year or month parameter"})
+		return
+	}
 
 	year, err := strconv.Atoi(yearStr)
 	if err != nil {
@@ -85,6 +94,13 @@ func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 
 	record, err := h.getDailyRecord(c.Request.Context(), date)
 	if err != nil {
+		if errors.Is(err, ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, common.ErrorResponse{
+				Code:    "NOT_FOUND",
+				Message: fmt.Sprintf("Daily record not found for date: %s", date),
+			})
+			return
+		}
 		slog.Error("failed to get daily record", slog.String("date", date), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
@@ -117,6 +133,13 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 
 	record, err := h.updateDailyRecord(c.Request.Context(), date, &req)
 	if err != nil {
+		if errors.Is(err, ErrRecordNotFound) {
+			c.JSON(http.StatusNotFound, common.ErrorResponse{
+				Code:    "NOT_FOUND",
+				Message: fmt.Sprintf("Daily record not found for date: %s", date),
+			})
+			return
+		}
 		slog.Error("failed to update daily record", slog.String("date", date), slog.String("error", err.Error()))
 		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
@@ -160,7 +183,7 @@ func (h *DailyHandler) getDailyRecord(ctx context.Context, date string) (*DailyR
 
 	today := jst.Now().Format("2006-01-02")
 	if date != today {
-		return nil, fmt.Errorf("daily record not found for date: %s", date)
+		return nil, fmt.Errorf("%w for date: %s", ErrRecordNotFound, date)
 	}
 
 	slog.Info("generating new daily record", slog.String("date", date))

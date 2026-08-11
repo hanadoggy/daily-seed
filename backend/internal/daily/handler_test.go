@@ -68,9 +68,9 @@ func TestDailyHandler_Slice(t *testing.T) {
 		}
 		assert.True(t, foundNewTask)
 
-		// 3. Past Date Not Found
+		// 3. Past Date Not Found (Returns 404 Not Found)
 		w = testutil.DoRequest(router, "GET", "/api/v1/daily/2020-01-01", nil)
-		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, http.StatusNotFound, w.Code)
 
 		// 4. Invalid Date Format
 		w = testutil.DoRequest(router, "GET", "/api/v1/daily/invalid-date", nil)

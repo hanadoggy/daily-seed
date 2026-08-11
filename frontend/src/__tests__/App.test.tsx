@@ -52,22 +52,26 @@ describe('App component & Header mode button', () => {
   });
 
   it('renders Edit Mode button in header when selectedDate is today', async () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>,
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>,
+      );
+    });
 
     const editModeBtn = await screen.findByRole('button', { name: /edit mode/i });
     expect(editModeBtn).toBeInTheDocument();
   });
 
   it('renders View Mode button when selectedDate is past and isAdminMode is false', async () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <App />
-      </MemoryRouter>,
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/']}>
+          <App />
+        </MemoryRouter>,
+      );
+    });
 
     // Simulate user selecting a past date after App initialization
     await act(async () => {
@@ -78,21 +82,26 @@ describe('App component & Header mode button', () => {
     expect(viewModeBtn).toBeInTheDocument();
 
     // Click View Mode button to toggle to Admin Mode
-    fireEvent.click(viewModeBtn);
+    await act(async () => {
+      fireEvent.click(viewModeBtn);
+    });
 
     const adminModeBtn = await screen.findByRole('button', { name: /admin mode/i });
     expect(adminModeBtn).toBeInTheDocument();
   });
 
   it('does not render Mode button in header when on /analytics route', async () => {
-    render(
-      <MemoryRouter initialEntries={['/analytics']}>
-        <App />
-      </MemoryRouter>,
-    );
+    await act(async () => {
+      render(
+        <MemoryRouter initialEntries={['/analytics']}>
+          <App />
+        </MemoryRouter>,
+      );
+    });
 
     expect(screen.queryByRole('button', { name: /edit mode/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /view mode/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /admin mode/i })).not.toBeInTheDocument();
   });
 });
+

@@ -121,4 +121,27 @@ describe('ManageModal', () => {
       expect(mockArchiveTask).toHaveBeenCalledWith('t1');
     });
   });
+
+  it('handles delete confirmation for habits', async () => {
+    render(<ManageModal open={true} onOpenChange={vi.fn()} />);
+
+    // Switch to habits tab
+    fireEvent.click(screen.getByText(/Habits/));
+
+    const buttons = screen.getAllByRole('button');
+    const trashBtn = buttons.find(b => b.innerHTML.includes('lucide-trash'));
+    if (!trashBtn) throw new Error('Trash button not found');
+
+    fireEvent.click(trashBtn);
+
+    expect(screen.getByText('Sure?')).toBeInTheDocument();
+
+    const confirmButtons = screen.getAllByRole('button').filter(b => b.innerHTML.includes('lucide-check'));
+    fireEvent.click(confirmButtons[0]);
+
+    await waitFor(() => {
+      expect(mockArchiveHabit).toHaveBeenCalledWith('h1');
+    });
+  });
 });
+

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProgressTracker } from '../ProgressTracker';
 import { useAppStore } from '@/store/useAppStore';
@@ -21,14 +21,16 @@ describe('ProgressTracker', () => {
     vi.clearAllMocks();
   });
 
-  it('renders task progress bars and sections', () => {
-    render(<ProgressTracker />);
+  it('renders task progress bars and sections', async () => {
+    await act(async () => {
+      render(<ProgressTracker />);
+    });
     expect(screen.getByText('Project Progress')).toBeInTheDocument();
     expect(screen.getByText('Continuous Progress')).toBeInTheDocument();
 
     expect(screen.getByText('Task 1')).toBeInTheDocument();
     expect(screen.getByText('5/10')).toBeInTheDocument();
-    
+
     expect(screen.getByText('Task 2')).toBeInTheDocument();
     expect(screen.getByText('5/5')).toBeInTheDocument();
 
@@ -37,9 +39,14 @@ describe('ProgressTracker', () => {
     expect(screen.getByText('2')).toBeInTheDocument();
   });
 
-  it('shows empty state if no progress', () => {
+  it('shows empty state if no progress', async () => {
     vi.mocked(useAppStore).mockReturnValue({ taskProgress: [], isLoading: false, fetchProgress: vi.fn() });
-    const { container } = render(<ProgressTracker />);
-    expect(container).toBeEmptyDOMElement();
+    let containerElement: HTMLElement | null = null;
+    await act(async () => {
+      const { container } = render(<ProgressTracker />);
+      containerElement = container;
+    });
+    expect(containerElement).toBeEmptyDOMElement();
   });
 });
+

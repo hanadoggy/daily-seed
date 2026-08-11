@@ -149,4 +149,44 @@ describe('TaskForm', () => {
     const sunnyButton = screen.getByRole('button', { name: 'Sunny' });
     expect((sunnyButton as HTMLButtonElement).disabled).toBe(true);
   });
+
+  it('toggles weather and mode conditions on task creation', async () => {
+    render(<TaskForm onClose={mockOnClose} />);
+
+    const titleInput = screen.getByPlaceholderText('e.g. Memorize Kanji');
+    fireEvent.change(titleInput, { target: { value: 'Outdoor Run' } });
+
+    // Toggle Rainy weather off
+    const rainyButton = screen.getByRole('button', { name: 'Rainy' });
+    fireEvent.click(rainyButton);
+
+    // Toggle Rest mode off
+    const restButton = screen.getByRole('button', { name: 'Rest' });
+    fireEvent.click(restButton);
+
+    const submitBtn = screen.getByRole('button', { name: 'Create Task' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockAddTask).toHaveBeenCalledWith(expect.objectContaining({
+        title: 'Outdoor Run',
+        conditions: {
+          weather: ['sunny'],
+          mode: ['Growth', 'Office', 'Remote'],
+        },
+      }));
+    });
+  });
+
+  it('hides dailyTarget input when task type is boolean', () => {
+    render(<TaskForm onClose={mockOnClose} />);
+
+    // Switch type to boolean
+    const typeSelect = screen.getByLabelText('Type');
+    fireEvent.change(typeSelect, { target: { value: 'boolean' } });
+
+    // Daily target input should be hidden for boolean tasks
+    expect(screen.queryByLabelText('Daily Target')).not.toBeInTheDocument();
+  });
 });
+
