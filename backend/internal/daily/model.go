@@ -1,6 +1,8 @@
 package daily
 
 import (
+	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -44,6 +46,33 @@ type DayContextPatch struct {
 type JournalPatch struct {
 	OneLineReview  *string `json:"oneLineReview,omitempty"`
 	ThreeLineDiary *string `json:"threeLineDiary,omitempty"`
+}
+
+var (
+	validWeathers = map[string]bool{"sunny": true, "rainy": true}
+	validModesMap = map[ContextMode]bool{
+		ModeGrowth: true, ModeRest: true, ModeOffice: true, ModeRemote: true,
+	}
+)
+
+func (r *UpdateDailyRecordRequest) Validate() error {
+	if r.Context != nil {
+		if r.Context.Weather != nil && !validWeathers[*r.Context.Weather] {
+			return fmt.Errorf("weather must be one of: sunny, rainy")
+		}
+		if r.Context.Mode != nil && !validModesMap[*r.Context.Mode] {
+			return fmt.Errorf("mode must be one of: Growth, Rest, Office, Remote")
+		}
+	}
+	for i, t := range r.Tasks {
+		if t.ActualAmount < 0 {
+			return fmt.Errorf("tasks[%d].actualAmount cannot be negative", i)
+		}
+		if t.TargetAmount < 0 {
+			return fmt.Errorf("tasks[%d].targetAmount cannot be negative", i)
+		}
+	}
+	return nil
 }
 
 type TaskEntry struct {

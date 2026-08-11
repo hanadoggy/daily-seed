@@ -131,6 +131,14 @@ func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 		return
 	}
 
+	if err := req.Validate(); err != nil {
+		c.JSON(http.StatusBadRequest, common.ErrorResponse{
+			Code:    "VALIDATION_ERROR",
+			Message: err.Error(),
+		})
+		return
+	}
+
 	record, err := h.updateDailyRecord(c.Request.Context(), date, &req)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {

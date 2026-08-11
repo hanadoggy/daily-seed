@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -43,6 +44,9 @@ func (t *Task) Validate() error {
 	if strings.TrimSpace(t.Title) == "" {
 		return fmt.Errorf("title is required")
 	}
+	if len(t.Title) > 200 {
+		return fmt.Errorf("title must not exceed 200 characters")
+	}
 	if !validSections[t.Section] {
 		return fmt.Errorf("section must be one of: japanese, dev, self_dev, exercise")
 	}
@@ -52,6 +56,9 @@ func (t *Task) Validate() error {
 	if strings.TrimSpace(t.Unit) == "" {
 		return fmt.Errorf("unit is required")
 	}
+	if len(t.Unit) > 50 {
+		return fmt.Errorf("unit must not exceed 50 characters")
+	}
 	if t.Type == "quantitative" && t.Metrics.DailyTarget <= 0 {
 		return fmt.Errorf("dailyTarget must be positive for quantitative tasks")
 	}
@@ -60,6 +67,9 @@ func (t *Task) Validate() error {
 	}
 	if t.StartDate == "" {
 		return fmt.Errorf("startDate is required")
+	}
+	if _, err := time.Parse("2006-01-02", t.StartDate); err != nil {
+		return fmt.Errorf("startDate must be in YYYY-MM-DD format")
 	}
 
 	if len(t.Conditions.Weather) == 0 {

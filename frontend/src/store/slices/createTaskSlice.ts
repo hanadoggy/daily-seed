@@ -11,6 +11,7 @@ import {
 export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, get) => ({
   tasks: [],
   taskProgress: [],
+  migratingTaskIds: new Set<string>(),
 
   addTask: async (task) => {
     try {
@@ -56,6 +57,10 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
   },
 
   migrateTask: async (id) => {
+    if (get().migratingTaskIds.has(id)) return;
+    set((state) => ({
+      migratingTaskIds: new Set([...state.migratingTaskIds, id]),
+    }));
     try {
       const completionDate = get().selectedDate;
       const result = await apiMigrateTask(id, completionDate);
@@ -70,6 +75,12 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to migrate task';
       set({ error: message });
+    } finally {
+      set((state) => {
+        const next = new Set(state.migratingTaskIds);
+        next.delete(id);
+        return { migratingTaskIds: next };
+      });
     }
   },
 

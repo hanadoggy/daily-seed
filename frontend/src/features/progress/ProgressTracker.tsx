@@ -7,8 +7,7 @@ import type { TaskProgress } from '@/types';
 import { HabitStreakWidget } from './HabitStreakWidget';
 
 export function ProgressTracker() {
-  const { taskProgress, fetchProgress, migrateTask } = useAppStore();
-  const [migratingId, setMigratingId] = useState<string | null>(null);
+  const { taskProgress, fetchProgress, migrateTask, migratingTaskIds } = useAppStore();
   const [randomPcts, setRandomPcts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -30,10 +29,8 @@ export function ProgressTracker() {
     });
   }, [taskProgress]);
 
-  const handleMigrate = async (taskId: string) => {
-    setMigratingId(taskId);
-    await migrateTask(taskId);
-    setMigratingId(null);
+  const handleMigrate = (taskId: string) => {
+    migrateTask(taskId);
   };
 
   if (taskProgress.length === 0) return null;
@@ -48,6 +45,8 @@ export function ProgressTracker() {
     if (isEndless) {
       clampedPct = tp.totalCompleted === 0 ? 0 : (randomPcts[tp.taskId] || 0);
     }
+
+    const isMigrating = migratingTaskIds?.has(tp.taskId) ?? false;
 
     return (
       <div key={tp.taskId} className="space-y-1.5">
@@ -90,11 +89,11 @@ export function ProgressTracker() {
               variant="ghost"
               size="sm"
               className="h-6 gap-1 px-2 text-xs text-green-500 hover:text-green-400 hover:bg-green-500/10"
-              disabled={migratingId === tp.taskId}
+              disabled={isMigrating}
               onClick={() => handleMigrate(tp.taskId)}
             >
               <ArrowRightLeft className="h-3 w-3" />
-              {migratingId === tp.taskId ? 'Migrating…' : 'Migrate'}
+              {isMigrating ? 'Migrating…' : 'Migrate'}
             </Button>
           )}
         </div>

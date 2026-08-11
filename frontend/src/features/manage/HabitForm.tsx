@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import type { Habit } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 
 import { HABIT_CATEGORIES } from './categoryOptions';
 import { cn } from '@/lib/utils';
+import { validateHabitForm } from '@/lib/validation';
 
 interface HabitFormProps {
   habit?: Habit;
@@ -21,13 +23,19 @@ export function HabitForm({ habit, onClose }: HabitFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
 
-    setSubmitting(true);
     const payload = {
       title: title.trim(),
       category,
     };
+
+    const validation = validateHabitForm(payload);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setSubmitting(true);
 
     if (isEditing) {
       await editHabit(habit.id, payload);

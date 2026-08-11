@@ -22,6 +22,7 @@ export interface DailySlice {
 export interface TaskSlice {
   tasks: Task[];
   taskProgress: TaskProgress[];
+  migratingTaskIds: Set<string>;
   addTask: (task: Omit<Task, 'id' | 'status'>) => Promise<void>;
   editTask: (id: string, task: Omit<Task, 'id' | 'status'>) => Promise<void>;
   archiveTask: (id: string) => Promise<void>;

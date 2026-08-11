@@ -16,6 +16,7 @@ describe('AutoMigrationPrompt', () => {
       taskProgress: [
         { taskId: 't1', title: 'Task 1', totalTarget: 10, totalCompleted: 10, percentage: 100 },
       ],
+      migratingTaskIds: new Set(),
       migrateTask: mockMigrateTask,
     });
     vi.clearAllMocks();

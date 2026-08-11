@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function AutoMigrationPrompt() {
-  const { taskProgress, migrateTask } = useAppStore();
+  const { taskProgress, migrateTask, migratingTaskIds } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [targetTask, setTargetTask] = useState<{ id: string; title: string } | null>(null);
   const [dismissedTaskIds, setDismissedTaskIds] = useState<Set<string>>(new Set());
@@ -29,8 +29,11 @@ export function AutoMigrationPrompt() {
     }
   }, [taskProgress, dismissedTaskIds, isOpen]);
 
+  const isMigrating = targetTask ? (migratingTaskIds?.has(targetTask.id) ?? false) : false;
+
   const handleConfirm = async () => {
     if (targetTask) {
+      if (migratingTaskIds?.has(targetTask.id)) return;
       setDismissedTaskIds((prev) => new Set(prev).add(targetTask.id));
       await migrateTask(targetTask.id);
       setIsOpen(false);
@@ -59,8 +62,12 @@ export function AutoMigrationPrompt() {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleCancel}>Not Yet</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
-            Migrate Task
+          <AlertDialogAction
+            onClick={handleConfirm}
+            disabled={isMigrating}
+            className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
+          >
+            {isMigrating ? 'Migrating…' : 'Migrate Task'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

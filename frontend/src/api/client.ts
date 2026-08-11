@@ -34,6 +34,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 // --- Daily Record ---
 
+const patchQueues = new Map<string, Promise<DailyRecord>>();
+
 export function fetchDailyRecord(date: string): Promise<DailyRecord> {
   return request<DailyRecord>(`/daily/${date}`);
 }
@@ -46,10 +48,22 @@ export function patchDailyRecord(
   date: string,
   body: Partial<DailyRecord>,
 ): Promise<DailyRecord> {
-  return request<DailyRecord>(`/daily/${date}`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
+  const prev = patchQueues.get(date) ?? Promise.resolve(null as unknown as DailyRecord);
+  const next = prev
+    .catch(() => {})
+    .then(() =>
+      request<DailyRecord>(`/daily/${date}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    );
+  patchQueues.set(date, next);
+  next.finally(() => {
+    if (patchQueues.get(date) === next) {
+      patchQueues.delete(date);
+    }
   });
+  return next;
 }
 
 // --- Tasks ---

@@ -87,6 +87,15 @@ func TestTaskHandler_Slice(t *testing.T) {
 		w = testutil.DoRequest(router, "POST", "/api/v1/tasks", []byte(`{"section":"dev","title":"Test","type":"boolean","startDate":"2026-01-01","conditions":{"weather":["sunny"],"mode":["Holiday"]}}`))
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
+		// Invalid StartDate format
+		w = testutil.DoRequest(router, "POST", "/api/v1/tasks", []byte(`{"section":"dev","title":"Test","type":"boolean","startDate":"2026/01/01"}`))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		// Title too long (>200 chars)
+		longTitle := string(make([]byte, 201))
+		w = testutil.DoRequest(router, "POST", "/api/v1/tasks", []byte(fmt.Sprintf(`{"section":"dev","title":"%s","type":"boolean","startDate":"2026-01-01"}`, longTitle)))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
 		// Invalid JSON
 		w = testutil.DoRequest(router, "POST", "/api/v1/tasks", []byte(`{bad}`))
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -293,7 +302,11 @@ func TestTaskHandler_Slice(t *testing.T) {
 		w = testutil.DoRequest(router, "POST", fmt.Sprintf("/api/v1/tasks/%s/migrate", id.Hex()), []byte(`{}`))
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
-		// 5. Successful Migrate
+		// 5. Future Completion Date -> Fail
+		w = testutil.DoRequest(router, "POST", fmt.Sprintf("/api/v1/tasks/%s/migrate", id.Hex()), []byte(`{"completionDate":"2099-01-01"}`))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		// 6. Successful Migrate
 		w = testutil.DoRequest(router, "POST", fmt.Sprintf("/api/v1/tasks/%s/migrate", id.Hex()), migrateReq)
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -307,5 +320,9 @@ func TestTaskHandler_Slice(t *testing.T) {
 		assert.Equal(t, "active", result.NewTask.Status)
 		assert.Equal(t, "2026-01-11", result.NewTask.StartDate) // completionDate + 1 day
 		assert.Equal(t, "Finish Course", result.NewTask.Title)
+
+		// 7. Duplicate Migrate on archived task -> Fail
+		w = testutil.DoRequest(router, "POST", fmt.Sprintf("/api/v1/tasks/%s/migrate", id.Hex()), migrateReq)
+		assert.True(t, w.Code == http.StatusBadRequest || w.Code == http.StatusConflict)
 	})
 }

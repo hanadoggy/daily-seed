@@ -111,14 +111,18 @@ func (s *TaskStore) MigrateTaskAtomic(ctx context.Context, archivedTask *Task, n
 	defer session.EndSession(ctx)
 
 	_, err = session.WithTransaction(ctx, func(sessCtx mongo.SessionContext) (interface{}, error) {
-		// Archive old task
-		filter := bson.M{"_id": archivedTask.ID}
+		// Archive old task (only if still active)
+		filter := bson.M{"_id": archivedTask.ID, "status": "active"}
 		update := bson.M{"$set": bson.M{
 			"status":  "archived",
 			"endDate": archivedTask.EndDate,
 		}}
-		if _, err := s.col.UpdateOne(sessCtx, filter, update); err != nil {
+		result, err := s.col.UpdateOne(sessCtx, filter, update)
+		if err != nil {
 			return nil, fmt.Errorf("archiving old task: %w", err)
+		}
+		if result.MatchedCount == 0 {
+			return nil, fmt.Errorf("task is no longer active (concurrent migration detected)")
 		}
 
 		// Insert new task

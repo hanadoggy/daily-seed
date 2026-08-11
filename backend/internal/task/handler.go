@@ -293,6 +293,13 @@ func (h *TaskHandler) Migrate(c *gin.Context) {
 
 	result, err := h.migrateTask(c.Request.Context(), id, req)
 	if err != nil {
+		if strings.Contains(err.Error(), "concurrent migration") {
+			c.JSON(http.StatusConflict, common.ErrorResponse{
+				Code:    "CONFLICT",
+				Message: err.Error(),
+			})
+			return
+		}
 		if strings.Contains(err.Error(), "not found") {
 			c.JSON(http.StatusNotFound, common.ErrorResponse{
 				Code:    "NOT_FOUND",
@@ -365,6 +372,9 @@ func (h *TaskHandler) migrateTask(ctx context.Context, id string, req MigrateTas
 	parsedDate, err := time.Parse("2006-01-02", req.CompletionDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid completionDate format")
+	}
+	if parsedDate.After(time.Now()) {
+		return nil, fmt.Errorf("completionDate cannot be in the future")
 	}
 
 	existing, err := h.store.FindByID(ctx, id)

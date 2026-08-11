@@ -15,6 +15,7 @@ describe('ProgressTracker', () => {
         { taskId: 't2', title: 'Task 2', type: 'quantitative', totalTarget: 5, totalCompleted: 5, percentage: 100 },
         { taskId: 't3', title: 'Task 3', type: 'boolean', totalTarget: 0, totalCompleted: 2, percentage: 0 },
       ],
+      migratingTaskIds: new Set(),
       isLoading: false,
       fetchProgress: vi.fn(),
     });

@@ -115,6 +115,18 @@ func TestDailyHandler_Slice(t *testing.T) {
 		w = testutil.DoRequest(router, "PATCH", "/api/v1/daily/"+today, []byte(`{}`))
 		assert.Equal(t, http.StatusOK, w.Code)
 
+		// Invalid Weather
+		w = testutil.DoRequest(router, "PATCH", "/api/v1/daily/"+today, []byte(`{"context":{"weather":"snowy"}}`))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		// Invalid Mode
+		w = testutil.DoRequest(router, "PATCH", "/api/v1/daily/"+today, []byte(`{"context":{"mode":"Party"}}`))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		// Negative actualAmount
+		w = testutil.DoRequest(router, "PATCH", "/api/v1/daily/"+today, []byte(`{"tasks":[{"taskId":"`+taskID.Hex()+`","targetAmount":1,"actualAmount":-1,"isCompleted":false}]}`))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
 		// Invalid Date
 		w = testutil.DoRequest(router, "PATCH", "/api/v1/daily/bad-date", patchBody)
 		assert.Equal(t, http.StatusBadRequest, w.Code)

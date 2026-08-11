@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -74,17 +73,10 @@ func (h *HabitHandler) Create(c *gin.Context) {
 		return
 	}
 
-	if strings.TrimSpace(habit.Title) == "" {
+	if err := habit.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
-			Message: "title is required",
-		})
-		return
-	}
-	if strings.TrimSpace(habit.Category) == "" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: "category is required",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -143,17 +135,10 @@ func (h *HabitHandler) Update(c *gin.Context) {
 		return
 	}
 
-	if strings.TrimSpace(habit.Title) == "" {
+	if err := habit.Validate(); err != nil {
 		c.JSON(http.StatusBadRequest, common.ErrorResponse{
 			Code:    "VALIDATION_ERROR",
-			Message: "title is required",
-		})
-		return
-	}
-	if strings.TrimSpace(habit.Category) == "" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: "category is required",
+			Message: err.Error(),
 		})
 		return
 	}

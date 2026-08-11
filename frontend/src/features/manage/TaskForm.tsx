@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MODE_OPTIONS, WEATHER_OPTIONS } from '../context-mode/conditionOptions';
+import { validateTaskForm } from '@/lib/validation';
 
 const SECTION_OPTIONS = [
   { value: 'japanese', label: '🇯🇵 Japanese' },
@@ -80,15 +81,6 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
-
-    setSubmitting(true);
-    if (isEditing && task?.startDate && startDate > task.startDate) {
-      if (!window.confirm('시작일을 늦출 경우 이전 날짜의 체크리스트 기록이 모두 삭제됩니다. 정말 변경하시겠습니까?')) {
-        setSubmitting(false);
-        return;
-      }
-    }
 
     const payload = {
       title: title.trim(),
@@ -105,6 +97,20 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
       },
       startDate,
     };
+
+    const validation = validateTaskForm(payload);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setSubmitting(true);
+    if (isEditing && task?.startDate && startDate > task.startDate) {
+      if (!window.confirm('시작일을 늦출 경우 이전 날짜의 체크리스트 기록이 모두 삭제됩니다. 정말 변경하시겠습니까?')) {
+        setSubmitting(false);
+        return;
+      }
+    }
 
     if (isEditing) {
       await editTask(task.id, payload);
