@@ -61,7 +61,7 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 ## Edge Cases, Concurrency & Validation
 
 - **Concurrency:** Handle potential race conditions gracefully. For instance, ensure a user cannot trigger the same action twice simultaneously.
-- **Validation:** Always validate incoming API requests (`Zod` for TypeScript, explicit validation methods for Go).
+- **Validation:** Always validate incoming API requests (pure TypeScript validation functions in `lib/validation.ts` for TypeScript, explicit `Validate() error` methods for Go).
 
 ## Project Conventions
 
