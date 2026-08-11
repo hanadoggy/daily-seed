@@ -54,10 +54,34 @@ pnpm test --run
 
 ## Architecture Highlights
 
-- **Backend Architecture:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows a pragmatic 2-Layer package-by-feature architecture (`handler` and `store` per domain inside `internal/<domain>`). Employs Go's *"Accept interfaces, return structs"* idiom with consumer-side interfaces. Task migration uses MongoDB transactions for atomicity.
+- **Backend Architecture:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows a pragmatic 2-Layer package-by-feature architecture (`handler` and `store` per domain inside `internal/<domain>`). Employs Go's *"Accept interfaces, return structs"* idiom with consumer-side interfaces. Tasks support customizable `unit` fields and MongoDB transactions for atomic task migration.
 - **Backend Testing:** Fast, reliable Slice and Integration testing using `testcontainers-go` (real ephemeral MongoDB) and `httptest` without brittle mock frameworks.
 - **Frontend Architecture:** React 19 with feature-sliced design principles, custom hooks, and global state management via Zustand 5. Implements optimistic updates with rollback logic on API failure.
 - **Database:** MongoDB 7 (Replica Set mode) configured with indexes and collections for `tasks`, `habits`, and `dailyRecords`.
+
+## API Endpoints Summary
+
+| Group | Method | Endpoint | Description |
+|---|---|---|---|
+| System | `GET` | `/health` | Server health check |
+| Tasks | `GET` | `/api/v1/tasks` | List all tasks |
+| Tasks | `GET` | `/api/v1/tasks/progress` | Get cumulative task progress |
+| Tasks | `GET` | `/api/v1/tasks/:id` | Get task by ID |
+| Tasks | `POST` | `/api/v1/tasks` | Create task |
+| Tasks | `PUT` | `/api/v1/tasks/:id` | Update task |
+| Tasks | `DELETE` | `/api/v1/tasks/:id` | Soft-delete / archive task |
+| Tasks | `POST` | `/api/v1/tasks/:id/migrate` | Atomic task migration |
+| Habits | `GET` | `/api/v1/habits` | List all habits |
+| Habits | `GET` | `/api/v1/habits/:id` | Get habit by ID |
+| Habits | `POST` | `/api/v1/habits` | Create habit |
+| Habits | `PUT` | `/api/v1/habits/:id` | Update habit |
+| Habits | `DELETE` | `/api/v1/habits/:id` | Archive habit |
+| Daily | `GET` | `/api/v1/daily/exists` | Get dates with existing daily records |
+| Daily | `GET` | `/api/v1/daily/:date` | Get daily record for date |
+| Daily | `PATCH` | `/api/v1/daily/:date` | Update daily record (context, tasks, habits, journal) |
+| Analytics | `GET` | `/api/v1/analytics/heatmap` | Annual activity heatmap data |
+| Analytics | `GET` | `/api/v1/analytics/summary` | Weekly/Monthly summary statistics |
+| Analytics | `GET` | `/api/v1/analytics/streaks` | Habit streak statistics & milestone achievements |
 
 ## Current Status
 
@@ -67,3 +91,4 @@ Phases 0–3 of the project roadmap are fully completed:
 - **Phase 1 (Motivation & Reflection):** Micro-journaling (debounced auto-save), cumulative progress tracker, atomic task migration.
 - **Phase 2 (Intelligence & Lifecycle):** Multi-select weather & context modes, conditional task filtering, automated migration prompts, task start/end date lifecycle, and archiving guards.
 - **Phase 3 (Analytics & Insights):** GitHub-style Heatmap Dashboard, Weekly & Monthly Summary Views (task & habit completion rates, mode distributions, journal timeline), Habit Streak Tracking & Statistics (current/longest streaks, milestone celebration modals), calendar record indicators, and Admin Mode.
+
