@@ -2,7 +2,6 @@ package daily
 
 import (
 	"context"
-	"daily-seed/internal/common"
 	"daily-seed/internal/habit"
 	"daily-seed/internal/task"
 	"daily-seed/pkg/jst"
@@ -48,18 +47,18 @@ func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
 	monthStr := c.Query("month")
 
 	if yearStr == "" || monthStr == "" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_QUERY", Message: "Missing year or month parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	year, err := strconv.Atoi(yearStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_YEAR", Message: "Invalid year parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 	month, err := strconv.Atoi(monthStr)
 	if err != nil || month < 1 || month > 12 {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{Code: "INVALID_MONTH", Message: "Invalid month parameter"})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -70,7 +69,7 @@ func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
 	records, err := h.store.FindBetweenDates(c.Request.Context(), startDate, endDate)
 	if err != nil {
 		slog.Error("failed to get existing record dates", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{Code: "INTERNAL_ERROR", Message: "Failed to retrieve existing dates"})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -85,27 +84,18 @@ func (h *DailyHandler) GetExistingRecordDates(c *gin.Context) {
 func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 	date := c.Param("date")
 	if !dateRegex.MatchString(date) {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_DATE",
-			Message: "Date must be in YYYY-MM-DD format",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	record, err := h.getDailyRecord(c.Request.Context(), date)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: fmt.Sprintf("Daily record not found for date: %s", date),
-			})
+			c.JSON(http.StatusNotFound, gin.H{})
 			return
 		}
 		slog.Error("failed to get daily record", slog.String("date", date), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to retrieve daily record",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -115,44 +105,29 @@ func (h *DailyHandler) GetDailyRecord(c *gin.Context) {
 func (h *DailyHandler) UpdateDailyRecord(c *gin.Context) {
 	date := c.Param("date")
 	if !dateRegex.MatchString(date) {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_DATE",
-			Message: "Date must be in YYYY-MM-DD format",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	var req UpdateDailyRecordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_BODY",
-			Message: "Request body must be valid JSON",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	if err := req.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	record, err := h.updateDailyRecord(c.Request.Context(), date, &req)
 	if err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: fmt.Sprintf("Daily record not found for date: %s", date),
-			})
+			c.JSON(http.StatusNotFound, gin.H{})
 			return
 		}
 		slog.Error("failed to update daily record", slog.String("date", date), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to update daily record",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { fetchHeatmap, fetchSummary, fetchStreaks } from '@/api/client';
+import { toast } from 'sonner';
+import { fetchHeatmap, fetchSummary, fetchStreaks, ApiError } from '@/api/client';
+import { getErrorMessage } from '@/lib/errorMessages';
 import type { HeatmapResponse, SummaryResponse, StreakResponse } from '@/types';
 import dayjs from 'dayjs';
 
@@ -45,10 +47,13 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
     try {
       const data = await fetchHeatmap(year);
       set({ heatmapData: data, isLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchHeatmap', status);
+      toast.error(message);
       set({
         isLoading: false,
-        error: err.response?.data?.message || err.message || 'Failed to fetch heatmap data',
+        error: message,
       });
     }
   },
@@ -66,10 +71,13 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
         summaryDate: currentDate,
         isSummaryLoading: false,
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchSummary', status);
+      toast.error(message);
       set({
         isSummaryLoading: false,
-        summaryError: err.response?.data?.message || err.message || 'Failed to fetch summary data',
+        summaryError: message,
       });
     }
   },
@@ -79,10 +87,13 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
     try {
       const data = await fetchStreaks();
       set({ streakData: data, isStreakLoading: false });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchStreaks', status);
+      toast.error(message);
       set({
         isStreakLoading: false,
-        streakError: err.response?.data?.message || err.message || 'Failed to fetch streak data',
+        streakError: message,
       });
     }
   },

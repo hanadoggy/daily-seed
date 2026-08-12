@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { toast } from 'sonner';
 import type { AppState, TaskSlice } from '../types';
 import {
   createTask as apiCreateTask,
@@ -6,7 +7,9 @@ import {
   deleteTask as apiDeleteTask,
   fetchTaskProgress as apiFetchProgress,
   migrateTask as apiMigrateTask,
+  ApiError,
 } from '../../api/client';
+import { getErrorMessage } from '../../lib/errorMessages';
 
 export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, get) => ({
   tasks: [],
@@ -20,7 +23,9 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       get().setDateAndFetch(get().selectedDate);
       get().fetchProgress();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create task';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('createTask', status);
+      toast.error(message);
       set({ error: message });
     }
   },
@@ -35,9 +40,10 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       get().setDateAndFetch(get().selectedDate);
       get().fetchProgress();
     } catch (err) {
-      set({ tasks: previous });
-      const message = err instanceof Error ? err.message : 'Failed to update task';
-      set({ error: message });
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('updateTask', status);
+      toast.error(message);
+      set({ tasks: previous, error: message });
     }
   },
 
@@ -51,8 +57,11 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       await apiDeleteTask(id);
       get().setDateAndFetch(get().selectedDate);
       get().fetchProgress();
-    } catch {
-      set({ tasks: previous });
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('archiveTask', status);
+      toast.error(message);
+      set({ tasks: previous, error: message });
     }
   },
 
@@ -73,7 +82,9 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       await get().fetchProgress();
       await get().setDateAndFetch(get().selectedDate);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to migrate task';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('migrateTask', status);
+      toast.error(message);
       set({ error: message });
     } finally {
       set((state) => {
@@ -89,7 +100,9 @@ export const createTaskSlice: StateCreator<AppState, [], [], TaskSlice> = (set, 
       const progress = await apiFetchProgress();
       set({ taskProgress: progress });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch progress';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchProgress', status);
+      toast.error(message);
       set({ error: message });
     }
   },

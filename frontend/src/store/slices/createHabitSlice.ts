@@ -1,10 +1,13 @@
 import type { StateCreator } from 'zustand';
+import { toast } from 'sonner';
 import type { AppState, HabitSlice } from '../types';
 import {
   createHabit as apiCreateHabit,
   updateHabit as apiUpdateHabit,
   deleteHabit as apiDeleteHabit,
+  ApiError,
 } from '../../api/client';
+import { getErrorMessage } from '../../lib/errorMessages';
 
 export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set, get) => ({
   habits: [],
@@ -15,7 +18,9 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
       set((state) => ({ habits: [...state.habits, created] }));
       get().setDateAndFetch(get().selectedDate);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create habit';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('createHabit', status);
+      toast.error(message);
       set({ error: message });
     }
   },
@@ -29,9 +34,10 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
       }));
       get().setDateAndFetch(get().selectedDate);
     } catch (err) {
-      set({ habits: previous });
-      const message = err instanceof Error ? err.message : 'Failed to update habit';
-      set({ error: message });
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('updateHabit', status);
+      toast.error(message);
+      set({ habits: previous, error: message });
     }
   },
 
@@ -43,8 +49,11 @@ export const createHabitSlice: StateCreator<AppState, [], [], HabitSlice> = (set
     try {
       await apiDeleteHabit(id);
       get().setDateAndFetch(get().selectedDate);
-    } catch {
-      set({ habits: previous });
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('archiveHabit', status);
+      toast.error(message);
+      set({ habits: previous, error: message });
     }
   },
 });

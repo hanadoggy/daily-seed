@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"daily-seed/internal/common"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -41,10 +40,7 @@ func (h *TaskHandler) List(c *gin.Context) {
 	tasks, err := h.store.FindAll(c.Request.Context())
 	if err != nil {
 		slog.Error("failed to list tasks", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to list tasks",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -62,17 +58,11 @@ func (h *TaskHandler) Get(c *gin.Context) {
 	task, err := h.store.FindByID(c.Request.Context(), id)
 	if err != nil {
 		slog.Error("failed to get task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to get task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 	if task == nil {
-		c.JSON(http.StatusNotFound, common.ErrorResponse{
-			Code:    "NOT_FOUND",
-			Message: fmt.Sprintf("task not found: %s", id),
-		})
+		c.JSON(http.StatusNotFound, gin.H{})
 		return
 	}
 	if strings.TrimSpace(task.Unit) == "" {
@@ -85,10 +75,7 @@ func (h *TaskHandler) Get(c *gin.Context) {
 func (h *TaskHandler) Create(c *gin.Context) {
 	var task Task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_BODY",
-			Message: "Request body must be valid JSON",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -108,10 +95,7 @@ func (h *TaskHandler) Create(c *gin.Context) {
 	}
 
 	if err := task.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -120,10 +104,7 @@ func (h *TaskHandler) Create(c *gin.Context) {
 
 	if err := h.store.Create(c.Request.Context(), &task); err != nil {
 		slog.Error("failed to create task", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to create task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -135,19 +116,13 @@ func (h *TaskHandler) Update(c *gin.Context) {
 
 	var task Task
 	if err := c.ShouldBindJSON(&task); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_BODY",
-			Message: "Request body must be valid JSON",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_ID",
-			Message: "Invalid task ID format",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 	task.ID = oid
@@ -155,32 +130,20 @@ func (h *TaskHandler) Update(c *gin.Context) {
 	existing, err := h.store.FindByID(c.Request.Context(), id)
 	if err != nil {
 		slog.Error("failed to find task for update", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to update task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, common.ErrorResponse{
-			Code:    "NOT_FOUND",
-			Message: fmt.Sprintf("task not found: %s", id),
-		})
+		c.JSON(http.StatusNotFound, gin.H{})
 		return
 	}
 	if existing.Status == "archived" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: "cannot update an archived task",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	if task.Type != existing.Type {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: "task type cannot be changed after creation",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -190,10 +153,7 @@ func (h *TaskHandler) Update(c *gin.Context) {
 	}
 
 	if err := task.Validate(); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -204,20 +164,14 @@ func (h *TaskHandler) Update(c *gin.Context) {
 	if task.StartDate > existing.StartDate && h.cleaner != nil {
 		if err := h.cleaner.RemoveTaskFromRecordsBeforeDate(c.Request.Context(), task.ID, task.StartDate); err != nil {
 			slog.Error("failed to clean past daily records", slog.String("id", id), slog.String("error", err.Error()))
-			c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-				Code:    "INTERNAL_ERROR",
-				Message: "Failed to clean past daily records",
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{})
 			return
 		}
 	}
 
 	if err := h.store.Update(c.Request.Context(), &task); err != nil {
 		slog.Error("failed to update task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to update task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -230,24 +184,15 @@ func (h *TaskHandler) Archive(c *gin.Context) {
 	existing, err := h.store.FindByID(c.Request.Context(), id)
 	if err != nil {
 		slog.Error("failed to find task for archive", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to archive task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 	if existing == nil {
-		c.JSON(http.StatusNotFound, common.ErrorResponse{
-			Code:    "NOT_FOUND",
-			Message: fmt.Sprintf("task not found: %s", id),
-		})
+		c.JSON(http.StatusNotFound, gin.H{})
 		return
 	}
 	if existing.Status == "archived" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "VALIDATION_ERROR",
-			Message: "task is already archived",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -255,10 +200,7 @@ func (h *TaskHandler) Archive(c *gin.Context) {
 	existing.EndDate = time.Now().Format("2006-01-02")
 	if err := h.store.Update(c.Request.Context(), existing); err != nil {
 		slog.Error("failed to archive task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to archive task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -269,10 +211,7 @@ func (h *TaskHandler) GetProgress(c *gin.Context) {
 	progress, err := h.getProgressForActiveTasks(c.Request.Context())
 	if err != nil {
 		slog.Error("failed to get task progress", slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to get task progress",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -284,41 +223,26 @@ func (h *TaskHandler) Migrate(c *gin.Context) {
 
 	var req MigrateTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_BODY",
-			Message: "Request body must be valid JSON",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	result, err := h.migrateTask(c.Request.Context(), id, req)
 	if err != nil {
 		if strings.Contains(err.Error(), "concurrent migration") {
-			c.JSON(http.StatusConflict, common.ErrorResponse{
-				Code:    "CONFLICT",
-				Message: err.Error(),
-			})
+			c.JSON(http.StatusConflict, gin.H{})
 			return
 		}
 		if strings.Contains(err.Error(), "not found") {
-			c.JSON(http.StatusNotFound, common.ErrorResponse{
-				Code:    "NOT_FOUND",
-				Message: err.Error(),
-			})
+			c.JSON(http.StatusNotFound, gin.H{})
 			return
 		}
 		if strings.Contains(err.Error(), "has not reached") || strings.Contains(err.Error(), "non-active") || strings.Contains(err.Error(), "completionDate") {
-			c.JSON(http.StatusBadRequest, common.ErrorResponse{
-				Code:    "MIGRATION_NOT_ALLOWED",
-				Message: err.Error(),
-			})
+			c.JSON(http.StatusBadRequest, gin.H{})
 			return
 		}
 		slog.Error("failed to migrate task", slog.String("id", id), slog.String("error", err.Error()))
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "Failed to migrate task",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 

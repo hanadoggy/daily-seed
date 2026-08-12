@@ -1,6 +1,8 @@
 import type { StateCreator } from 'zustand';
+import { toast } from 'sonner';
 import type { AppState, DailySlice } from '../types';
-import { fetchDailyRecord, patchDailyRecord, fetchExistingRecordDates } from '../../api/client';
+import { fetchDailyRecord, patchDailyRecord, fetchExistingRecordDates, ApiError } from '../../api/client';
+import { getErrorMessage } from '../../lib/errorMessages';
 import type { ContextMode, Journal, HabitEntry, TaskEntry } from '../../types';
 
 export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set, get) => ({
@@ -20,7 +22,10 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       const response = await fetchExistingRecordDates(year, month);
       set({ existingRecordDates: response.dates });
     } catch (err) {
-      console.error('Failed to fetch existing record dates', err);
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchExistingDates', status);
+      toast.error(message);
+      set({ error: message });
     }
   },
 
@@ -35,7 +40,9 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
         isLoading: false,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch daily record';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchDailyRecord', status);
+      toast.error(message);
       set({ isLoading: false, error: message });
     }
   },
@@ -59,8 +66,11 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       await patchDailyRecord(selectedDate, {
         context: { ...dailyRecord.context, mode },
       });
-    } catch {
-      set({ currentMode: previousMode, dailyRecord: previousRecord });
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('patchDailyRecord', status);
+      toast.error(message);
+      set({ currentMode: previousMode, dailyRecord: previousRecord, error: message });
     }
   },
 
@@ -83,8 +93,11 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       await patchDailyRecord(selectedDate, {
         context: { ...dailyRecord.context, weather },
       });
-    } catch {
-      set({ currentWeather: previousWeather, dailyRecord: previousRecord });
+    } catch (err) {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('patchDailyRecord', status);
+      toast.error(message);
+      set({ currentWeather: previousWeather, dailyRecord: previousRecord, error: message });
     }
   },
 
@@ -98,7 +111,9 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       });
       set({ dailyRecord: updated });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save journal';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('patchDailyRecord', status);
+      toast.error(message);
       set({ error: message });
     }
   },
@@ -114,8 +129,11 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
 
     set({ dailyRecord: { ...dailyRecord, habits: updatedHabits } });
 
-    patchDailyRecord(selectedDate, { habits: updatedHabits }).catch(() => {
-      set({ dailyRecord: previousRecord });
+    patchDailyRecord(selectedDate, { habits: updatedHabits }).catch((err) => {
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('patchDailyRecord', status);
+      toast.error(message);
+      set({ dailyRecord: previousRecord, error: message });
     });
   },
 
@@ -140,8 +158,11 @@ export const createDailySlice: StateCreator<AppState, [], [], DailySlice> = (set
       .then(() => {
         get().fetchProgress();
       })
-      .catch(() => {
-        set({ dailyRecord: previousRecord });
+      .catch((err) => {
+        const status = err instanceof ApiError ? err.status : 0;
+        const message = getErrorMessage('patchDailyRecord', status);
+        toast.error(message);
+        set({ dailyRecord: previousRecord, error: message });
       });
   },
 });

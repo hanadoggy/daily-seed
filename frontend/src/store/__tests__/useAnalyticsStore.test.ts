@@ -3,11 +3,15 @@ import { useAnalyticsStore } from '../useAnalyticsStore';
 import * as apiClient from '@/api/client';
 import type { SummaryResponse } from '@/types';
 
-vi.mock('@/api/client', () => ({
-  fetchHeatmap: vi.fn(),
-  fetchSummary: vi.fn(),
-  fetchStreaks: vi.fn(),
-}));
+vi.mock('@/api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/client')>();
+  return {
+    ...actual,
+    fetchHeatmap: vi.fn(),
+    fetchSummary: vi.fn(),
+    fetchStreaks: vi.fn(),
+  };
+});
 
 describe('useAnalyticsStore', () => {
   beforeEach(() => {
@@ -88,21 +92,14 @@ describe('useAnalyticsStore', () => {
   });
 
   it('handles fetchHeatmapData failure with custom API error response', async () => {
-    const mockError = {
-      response: {
-        data: {
-          message: 'Server internal error occurred',
-        },
-      },
-    };
-    vi.mocked(apiClient.fetchHeatmap).mockRejectedValueOnce(mockError);
+    vi.mocked(apiClient.fetchHeatmap).mockRejectedValueOnce(new apiClient.ApiError(500));
 
     await useAnalyticsStore.getState().fetchHeatmapData(2026);
 
     const state = useAnalyticsStore.getState();
     expect(state.isLoading).toBe(false);
     expect(state.heatmapData).toBeNull();
-    expect(state.error).toBe('Server internal error occurred');
+    expect(state.error).toBe('서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
   });
 
   it('handles fetchSummaryData success and navigation', async () => {

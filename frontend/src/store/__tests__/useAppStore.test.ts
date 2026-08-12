@@ -3,21 +3,25 @@ import { useAppStore } from '../useAppStore';
 import * as apiClient from '../../api/client';
 import type { DailyRecord } from '../../types';
 
-// Mock the API client
-vi.mock('../../api/client', () => ({
-  fetchDailyRecord: vi.fn(),
-  patchDailyRecord: vi.fn(),
-  fetchTasks: vi.fn(),
-  fetchHabits: vi.fn(),
-  createTask: vi.fn(),
-  updateTask: vi.fn(),
-  deleteTask: vi.fn(),
-  createHabit: vi.fn(),
-  updateHabit: vi.fn(),
-  deleteHabit: vi.fn(),
-  migrateTask: vi.fn(),
-  fetchTaskProgress: vi.fn(),
-}));
+vi.mock('../../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../api/client')>();
+  return {
+    ...actual,
+    fetchDailyRecord: vi.fn(),
+    patchDailyRecord: vi.fn(),
+    fetchExistingRecordDates: vi.fn(),
+    fetchTasks: vi.fn(),
+    fetchHabits: vi.fn(),
+    createTask: vi.fn(),
+    updateTask: vi.fn(),
+    deleteTask: vi.fn(),
+    createHabit: vi.fn(),
+    updateHabit: vi.fn(),
+    deleteHabit: vi.fn(),
+    migrateTask: vi.fn(),
+    fetchTaskProgress: vi.fn(),
+  };
+});
 
 describe('useAppStore Optimistic Updates', () => {
   const initialRecord: DailyRecord = {
@@ -167,24 +171,24 @@ describe('TaskSlice', () => {
   it('editTask should rollback on failure and set error state', async () => {
     const existingTask = { id: 't1', title: 'Task 1', section: 'dev' };
     useAppStore.setState({ tasks: [existingTask as any], error: null });
-    vi.mocked(apiClient.updateTask).mockRejectedValueOnce(new Error('Update failed'));
+    vi.mocked(apiClient.updateTask).mockRejectedValueOnce(new apiClient.ApiError(400));
 
     await useAppStore.getState().editTask('t1', { title: 'Updated Title' } as any);
 
     expect(useAppStore.getState().tasks[0].title).toBe('Task 1');
-    expect(useAppStore.getState().error).toBe('Update failed');
+    expect(useAppStore.getState().error).toBe('태스크 수정 내용이 올바르지 않습니다.');
   });
 
   it('migrateTask should rollback on failure and set error state', async () => {
     const existingTask = { id: 't1', title: 'Task 1', status: 'active' };
     useAppStore.setState({ tasks: [existingTask as any], error: null });
-    vi.mocked(apiClient.migrateTask).mockRejectedValueOnce(new Error('Migration failed'));
+    vi.mocked(apiClient.migrateTask).mockRejectedValueOnce(new apiClient.ApiError(400));
 
     await useAppStore.getState().migrateTask('t1');
 
     expect(useAppStore.getState().tasks).toHaveLength(1);
     expect(useAppStore.getState().tasks[0].id).toBe('t1');
-    expect(useAppStore.getState().error).toBe('Migration failed');
+    expect(useAppStore.getState().error).toBe('마이그레이션 조건이 충족되지 않았습니다.');
   });
 });
 
@@ -207,7 +211,7 @@ describe('HabitSlice', () => {
   it('archiveHabit should rollback on failure', async () => {
     const existingHabit = { id: 'h1', title: 'Habit 1', status: 'active' };
     useAppStore.setState({ habits: [existingHabit as any] });
-    vi.mocked(apiClient.deleteHabit).mockRejectedValueOnce(new Error('fail'));
+    vi.mocked(apiClient.deleteHabit).mockRejectedValueOnce(new apiClient.ApiError(500));
 
     await useAppStore.getState().archiveHabit('h1');
 
@@ -217,12 +221,12 @@ describe('HabitSlice', () => {
   it('editHabit should rollback on failure and set error state', async () => {
     const existingHabit = { id: 'h1', title: 'Habit 1' };
     useAppStore.setState({ habits: [existingHabit as any], error: null });
-    vi.mocked(apiClient.updateHabit).mockRejectedValueOnce(new Error('Habit update failed'));
+    vi.mocked(apiClient.updateHabit).mockRejectedValueOnce(new apiClient.ApiError(400));
 
     await useAppStore.getState().editHabit('h1', { title: 'Updated Habit' } as any);
 
     expect(useAppStore.getState().habits[0].title).toBe('Habit 1');
-    expect(useAppStore.getState().error).toBe('Habit update failed');
+    expect(useAppStore.getState().error).toBe('습관 수정 내용이 올바르지 않습니다.');
   });
 });
 
@@ -244,12 +248,12 @@ describe('DailySlice extended', () => {
   });
 
   it('setDateAndFetch sets error on API failure', async () => {
-    vi.mocked(apiClient.fetchDailyRecord).mockRejectedValueOnce(new Error('Fetch failed'));
+    vi.mocked(apiClient.fetchDailyRecord).mockRejectedValueOnce(new apiClient.ApiError(404));
 
     await useAppStore.getState().setDateAndFetch('2023-10-10');
 
     expect(useAppStore.getState().dailyRecord).toBeNull();
-    expect(useAppStore.getState().error).toBe('Fetch failed');
+    expect(useAppStore.getState().error).toBe('해당 날짜의 기록을 찾을 수 없습니다.');
   });
 
   it('saveJournal updates record on success', async () => {
@@ -271,12 +275,12 @@ describe('DailySlice extended', () => {
       dailyRecord: { id: '2023-10-10', journal: originalJournal } as any,
       error: null,
     });
-    vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new Error('Patch failed'));
+    vi.mocked(apiClient.patchDailyRecord).mockRejectedValueOnce(new apiClient.ApiError(500));
 
     await useAppStore.getState().saveJournal({ oneLineReview: 'new review', threeLineDiary: 'new diary' });
 
     expect(useAppStore.getState().dailyRecord?.journal).toEqual(originalJournal);
-    expect(useAppStore.getState().error).toBe('Patch failed');
+    expect(useAppStore.getState().error).toBe('서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.');
   });
 });
 

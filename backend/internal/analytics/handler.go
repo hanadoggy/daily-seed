@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"daily-seed/internal/common"
 	"daily-seed/internal/daily"
 	"daily-seed/internal/habit"
 	"daily-seed/internal/task"
@@ -50,21 +49,14 @@ func (h *AnalyticsHandler) GetHeatmap(c *gin.Context) {
 		var err error
 		year, err = strconv.Atoi(yearStr)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, common.ErrorResponse{
-				Code:    "INVALID_QUERY",
-				Message: "year must be a valid integer",
-			})
+			c.JSON(http.StatusBadRequest, gin.H{})
 			return
 		}
 	}
 
 	res, err := h.getHeatmapData(c.Request.Context(), year)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "failed to get heatmap data",
-			Details: err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 
@@ -79,20 +71,13 @@ func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 	}
 
 	if period != "weekly" && period != "monthly" {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_QUERY",
-			Message: "period must be 'weekly' or 'monthly'",
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
 	res, err := h.getSummaryData(c.Request.Context(), period, dateStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, common.ErrorResponse{
-			Code:    "INVALID_DATE",
-			Message: "failed to get summary data",
-			Details: err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
 
@@ -419,11 +404,7 @@ func (h *AnalyticsHandler) getSummaryData(ctx context.Context, period, dateStr s
 func (h *AnalyticsHandler) GetStreaks(c *gin.Context) {
 	res, err := h.getStreakData(c.Request.Context())
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, common.ErrorResponse{
-			Code:    "INTERNAL_ERROR",
-			Message: "failed to get streak data",
-			Details: err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{})
 		return
 	}
 

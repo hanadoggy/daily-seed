@@ -4,34 +4,39 @@ import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
 import { useAppStore } from '@/store/useAppStore';
 
-vi.mock('@/api/client', () => ({
-  fetchDailyRecord: vi.fn().mockImplementation((date: string) =>
-    Promise.resolve({
-      id: 'rec1',
-      date: date,
-      context: { mode: 'Growth', weather: 'sunny' },
-      tasks: [],
-      habits: [],
-      journal: { oneLineReview: '', threeLineDiary: '' },
+vi.mock('@/api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/client')>();
+  return {
+    ...actual,
+    fetchDailyRecord: vi.fn().mockImplementation((date: string) =>
+      Promise.resolve({
+        id: 'rec1',
+        date: date,
+        context: { mode: 'Growth', weather: 'sunny' },
+        tasks: [],
+        habits: [],
+        journal: { oneLineReview: '', threeLineDiary: '' },
+      }),
+    ),
+    fetchExistingRecordDates: vi.fn().mockResolvedValue({ dates: ['2026-07-25'] }),
+    fetchTasks: vi.fn().mockResolvedValue([]),
+    fetchHabits: vi.fn().mockResolvedValue([]),
+    fetchTaskProgress: vi.fn().mockResolvedValue([]),
+    fetchHeatmap: vi.fn().mockResolvedValue({ days: [{ date: '2026-01-01', total: 0, habits: 0, sectionCounts: {} }] }),
+    fetchSummary: vi.fn().mockResolvedValue({
+      period: 'weekly',
+      startDate: '2026-07-19',
+      endDate: '2026-07-25',
+      totalDays: 7,
+      recordedDays: 1,
+      taskCompletion: { overall: 0, sections: {}, perTask: [] },
+      habitCompletion: { overall: 0, perHabit: [] },
+      modeDistribution: {},
+      journals: [],
     }),
-  ),
-  fetchExistingRecordDates: vi.fn().mockResolvedValue({ dates: ['2026-07-25'] }),
-  fetchTasks: vi.fn().mockResolvedValue([]),
-  fetchHabits: vi.fn().mockResolvedValue([]),
-  fetchTaskProgress: vi.fn().mockResolvedValue([]),
-  fetchHeatmap: vi.fn().mockResolvedValue({ days: [{ date: '2026-01-01', total: 0, habits: 0, sectionCounts: {} }] }),
-  fetchSummary: vi.fn().mockResolvedValue({
-    period: 'weekly',
-    startDate: '2026-07-19',
-    endDate: '2026-07-25',
-    totalDays: 7,
-    recordedDays: 1,
-    taskCompletion: { overall: 0, sections: {}, perTask: [] },
-    habitCompletion: { overall: 0, perHabit: [] },
-    modeDistribution: {},
-    journals: [],
-  }),
-}));
+    fetchStreaks: vi.fn().mockResolvedValue({ habits: [] }),
+  };
+});
 
 describe('App component & Header mode button', () => {
   beforeEach(() => {

@@ -2,7 +2,6 @@ package habit_test
 
 import (
 	"context"
-	"daily-seed/internal/common"
 	"daily-seed/internal/habit"
 	"daily-seed/internal/testutil"
 	"encoding/json"
@@ -52,9 +51,6 @@ func TestHabitHandler_Slice(t *testing.T) {
 		nonExistID := primitive.NewObjectID().Hex()
 		w = testutil.DoRequest(router, "GET", "/api/v1/habits/"+nonExistID, nil)
 		assert.Equal(t, http.StatusNotFound, w.Code)
-		var errRes common.ErrorResponse
-		_ = json.Unmarshal(w.Body.Bytes(), &errRes)
-		assert.Equal(t, "NOT_FOUND", errRes.Code)
 
 		// InvalidID
 		w = testutil.DoRequest(router, "GET", "/api/v1/habits/invalid-hex", nil)

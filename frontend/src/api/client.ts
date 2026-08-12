@@ -2,15 +2,13 @@ import type { DailyRecord, Task, Habit, TaskProgress, MigrationResult } from '..
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1';
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number;
-  code: string;
 
-  constructor(status: number, code: string, message: string) {
-    super(message);
+  constructor(status: number) {
+    super(`Request failed with status ${status}`);
     this.name = 'ApiError';
     this.status = status;
-    this.code = code;
   }
 }
 
@@ -21,12 +19,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(
-      res.status,
-      body.code ?? 'UNKNOWN',
-      body.message ?? `Request failed with status ${res.status}`,
-    );
+    throw new ApiError(res.status);
   }
 
   return res.json();

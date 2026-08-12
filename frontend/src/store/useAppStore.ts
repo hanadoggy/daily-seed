@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import type { AppState } from './types';
 import { createDailySlice } from './slices/createDailySlice';
 import { createTaskSlice } from './slices/createTaskSlice';
 import { createHabitSlice } from './slices/createHabitSlice';
-import { fetchTasks, fetchHabits } from '../api/client';
+import { fetchTasks, fetchHabits, ApiError } from '../api/client';
+import { getErrorMessage } from '../lib/errorMessages';
 
 export const useAppStore = create<AppState>()((...a) => ({
   ...createDailySlice(...a),
@@ -16,7 +18,9 @@ export const useAppStore = create<AppState>()((...a) => ({
       const [tasks, habits] = await Promise.all([fetchTasks(), fetchHabits()]);
       set({ tasks, habits });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch master data';
+      const status = err instanceof ApiError ? err.status : 0;
+      const message = getErrorMessage('fetchMasterData', status);
+      toast.error(message);
       set({ error: message });
     }
   },
