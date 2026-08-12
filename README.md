@@ -54,9 +54,9 @@ pnpm test --run
 
 ## Architecture Highlights
 
-- **Backend Architecture:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows a pragmatic 2-Layer package-by-feature architecture (`handler` and `store` per domain inside `internal/<domain>`). Employs Go's *"Accept interfaces, return structs"* idiom with consumer-side interfaces. Tasks support customizable `unit` fields and MongoDB transactions for atomic task migration (with status guards for concurrency control). Input validation is explicitly enforced via struct `Validate() error` methods.
+- **Backend Architecture:** Idiomatic Go using Gin framework, `slog` for structured logging, and MongoDB Go Driver. Follows a pragmatic 2-Layer package-by-feature architecture (`handler` and `store` per domain inside `internal/<domain>`). Employs Go's *"Accept interfaces, return structs"* idiom with consumer-side interfaces. Error handling returns clean HTTP status codes (`gin.H{}` or status code only) without custom error bodies. Tasks support customizable `unit` fields and MongoDB transactions for atomic task migration (with status guards for concurrency control). Input validation is explicitly enforced via struct `Validate() error` methods.
 - **Backend Testing:** Fast, reliable Slice and Integration testing using `testcontainers-go` (real ephemeral MongoDB) and `httptest` without brittle mock frameworks.
-- **Frontend Architecture:** React 19 with feature-sliced design principles, custom hooks, and global state management via Zustand 5. Implements optimistic updates with rollback logic on API failure, client-side request serialization queue for PATCH requests, in-flight task migration tracking, and pure TypeScript validation functions (`lib/validation.ts`).
+- **Frontend Architecture:** React 19 with feature-sliced design principles, custom hooks, and global state management via Zustand 5. Implements optimistic updates with rollback logic on API failure, client-side request serialization queue for PATCH requests, in-flight task migration tracking, pure TypeScript validation functions (`lib/validation.ts`), single-source Korean error message mapping (`lib/errorMessages.ts`), toast notification integration (`sonner`), and top-level React `ErrorBoundary`.
 - **Database:** MongoDB 7 (Replica Set mode) configured with indexes and collections for `tasks`, `habits`, and `dailyRecords`.
 
 ## API Endpoints Summary
@@ -85,11 +85,11 @@ pnpm test --run
 
 ## Current Status
 
-Phases 0–3 of the project roadmap as well as Phase 4 Input Validation & Concurrency Control are fully completed:
+Phases 0–3 of the project roadmap as well as Phase 4 Validation, Concurrency Control, and Error Handling Improvements are fully completed:
 
 - **Phase 0 (Foundation):** Monorepo structure, CRUD APIs, multi-theme UI, Docker Compose orchestration, and 2-Layer backend refactoring.
 - **Phase 1 (Motivation & Reflection):** Micro-journaling (debounced auto-save), cumulative progress tracker, atomic task migration.
 - **Phase 2 (Intelligence & Lifecycle):** Multi-select weather & context modes, conditional task filtering, automated migration prompts, task start/end date lifecycle, and archiving guards.
 - **Phase 3 (Analytics & Insights):** GitHub-style Heatmap Dashboard, Weekly & Monthly Summary Views (task & habit completion rates, mode distributions, journal timeline), Habit Streak Tracking & Statistics (current/longest streaks, milestone celebration modals), calendar record indicators, and Admin Mode.
-- **Phase 4 (Validation & Concurrency):** Form input validation via pure TypeScript functions (`lib/validation.ts`) & backend `Validate() error` methods, concurrency guards for atomic task migration (409 Conflict), and date-based PATCH request serialization queue.
+- **Phase 4 (Validation, Concurrency & Error Handling):** Form input validation via pure TypeScript functions (`lib/validation.ts`) & backend `Validate() error` methods, concurrency guards for atomic task migration (409 Conflict), date-based PATCH request serialization queue, HTTP status code-based backend error responses, single-source frontend Korean error message mapping (`lib/errorMessages.ts`) with Sonner toast notifications, and React ErrorBoundary.
 

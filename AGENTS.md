@@ -65,7 +65,7 @@ You are an expert software engineer. Your primary goal is to write **readable, m
 
 ## Project Conventions
 
-- Follow the error response format: `{ code, message, details }` (`common.ErrorResponse`).
+- **Error Handling**: Backend handles errors with standard HTTP status codes (`gin.H{}` / status code only). Frontend maps action + status code to Korean user-friendly messages via `lib/errorMessages.ts` and displays toast notifications (and error state in stores).
 - When modifying existing code, maintain consistency with surrounding code style unless there is a clear reason to improve it.
 
 ## Final Mindset
