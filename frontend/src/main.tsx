@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>,
+  <StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
@@ -17,5 +17,5 @@ createRoot(document.getElementById('root')!).render(
         </ThemeProvider>
       </BrowserRouter>
     </ErrorBoundary>
-  </StrictMode>,
+  </StrictMode>
 )
